@@ -1,162 +1,197 @@
-; Template for program using standard Win32 headers
-
 format PE GUI 4.0
-entry createStackFrame:
+entry start
 
 include 'win32a.inc'
 
 section '.code' code readable executable
-	createStackFrame:
+	start:
+		; Initialise the stack frame
+
 		push ebp
 		mov ebp, esp
-		sub esp, 4
-		jmp initialiseWindow
-	
-	initialiseWindow:
-		mov	eax, sizeof.WNDCLASSEX
-		mov	[wcex.cbSize], eax
-		mov	[wcex.style], CS_HREDRAW+CS_VREDRAW
-		mov	[wcex.lpfnWndProc], WndProc
-		mov	[wcex.cbClsExtra], 0
-		mov	[wcex.cbWndExtra], 0
-		mov	dword [esp], 0
-		call GetModuleHandle
-		mov	[wcex.hcInstance], eax
 		sub esp, 8
-		mov	[esp], IDI_APPLICATION
-		mov	[esp+4], [wcex.hInstance]
-		call LoadIcon
-		mov	[wcex.hIcon], eax
-		mov	[wcex.hIconSm], eax
-		sub esp, 8
-		mov	[esp], IDC_ARROW
-		mov	[esp+4], NULL
-		call LoadCursor
-		mov	[wcex.hCursor], eax
-		mov	[wcex.hbrBackground], COLOR_WINDOW+1
+
+		; Initialise the window
+
+		mov	dword [esp], NULL
+		call [GetModuleHandle]
+		mov	dword [wcex.hInstance], eax
+		mov	dword [esp], NULL
+		mov	dword [esp+4], IDI_APPLICATION
+		call [LoadIcon]
+		test eax, eax
+		jz loadIconError
+		mov	dword [wcex.hIcon], eax
+		mov	dword [wcex.hIconSm], eax
+		mov	dword [esp], NULL
+		mov	dword [esp+4], IDC_ARROW
+		call [LoadCursor]
+		mov	dword [wcex.hCursor], eax
+		mov	dword [wcex.hbrBackground], COLOR_WINDOW+1
 		mov dword [wcex.lpszClassName], szClass
 		mov dword [wcex.lpszMenuName], NULL
-		sub esp, 4
-		mov [esp], wcex
-		call RegisterClassEx
+		mov	eax, sizeof.WNDCLASSEX
+		mov	dword [wcex.cbSize], eax
+		mov	dword [wcex.style], CS_HREDRAW+CS_VREDRAW
+		mov	dword [wcex.lpfnWndProc], WndProc
+		mov	dword [wcex.cbClsExtra], 0
+		mov	dword [wcex.cbWndExtra], 0
+		mov dword [esp], wcex
+		call [RegisterClassEx]
 		test eax, eax
 		jz regError
-		jmp createWindow:
-		
-	createWindow:
+
+		; Create the window
+
 		sub esp, 48
-		mov dword [esp], NULL
-		mov dword [esp+4], [wcex.hInstance]
-		mov dword [esp+8], NULL
-		mov dword [esp+12], NULL
-		mov dword [esp+16], 120
-		mov dword [esp+20], 240
-		mov dword [esp+24], CW_USEDEFAULT
-		mov dword [esp+28], CW_USEDEFAULT
-		mov dword [esp+32], WS_OVERLAPPEDWINDOW
-		mov dword [esp+36], applicationTitle
-		mov dword [esp+40], szClass
-		mov dword [esp+44], 0
-		call CreateWindowEx
+		mov dword [esp], 0
+		mov dword [esp+4], szClass
+		mov dword [esp+8], applicationTitle
+		mov dword [esp+12], WS_OVERLAPPEDWINDOW
+		mov dword [esp+16], CW_USEDEFAULT
+		mov dword [esp+20], CW_USEDEFAULT
+		mov dword [esp+24], 240
+		mov dword [esp+28], 120
+		mov dword [esp+32], NULL
+		mov dword [esp+36], NULL
+		mov dword [esp+40], wcex.hInstance
+		mov dword [esp+44], NULL
+		call [CreateWindowEx]
 		test eax, eax
 		jz createError
 		mov [windowHandle], eax
-		jmp showWindow
-		
-	showWindow:
+	
+		; Show the window
+
 		sub esp, 8
-		mov dword [esp], SW_SHOWNORMAL
-		mov dword [esp+4], [windowHandle]
-		call ShowWindow
-		jmp updateWindow
-		
-	updateWindow:
+		mov eax, [windowHandle]
+		mov dword [esp], eax
+		mov dword [esp+4], SW_SHOWNORMAL
+		call [ShowWindow]
+
+		; Update the window
+
 		sub esp, 4
-		mov dword [esp], [windowHandle]
-		call UpdateWindow
-		jmp messageLoop
-		
+		mov eax, [windowHandle]
+		mov dword [esp], eax
+		call [UpdateWindow]
+
 	messageLoop:
 		sub esp, 16
-		mov dword [esp], 0
-		mov dword [esp+4], 0
-		mov dword [esp+8], NULL
-		mov dword [esp+12], msg
-		call GetMessage
+		mov dword [esp], msg
+		mov dword [esp+4], NULL
+		mov dword [esp+8], 0
+		mov dword [esp+12], 0
+		call [GetMessage]
 		test eax, eax
 		jz exit
-		sub esp 4
-		mov dword [esp] msg
-		call TranslateMessage
-		sub esp 4
-		mov dword [esp] msg
-		call DispatchMessage
+		sub esp, 4
+		mov dword [esp], msg
+		call [TranslateMessage]
+		sub esp, 4
+		mov dword [esp], msg
+		call [DispatchMessage]
 		jmp messageLoop
-		
+
+	loadIconError:
+		sub esp, 16
+		mov dword [esp], NULL
+		mov dword [esp+4], loadIconErrorMessage
+		mov dword [esp+8], applicationTitle
+		mov dword [esp+12], MB_ICONERROR+MB_OK
+		call [MessageBox]
+		jmp exit
+
 	regError:
 		sub esp, 16
-		mov dword [esp], MB_ICONERROR+MB_OK
-		mov dword [esp+4], applicationTitle,
-		mov dword [esp+8], szRegError,
-		mov dword [esp+12], NULL
-		call MessageBox
+		mov dword [esp], NULL
+		mov dword [esp+4], szRegError
+		mov dword [esp+8], applicationTitle
+		mov dword [esp+12], MB_ICONERROR+MB_OK
+		call [MessageBox]
 		jmp exit
-		
-	createError:
+
+    createError:
 		sub esp, 16
-		mov dword [esp], MB_ICONERROR+MB_OK
-		mov dword [esp+4], applicationTitle
-		mov dword [esp+8], szCreateError,
-		mov dword [esp+12], NULL
-		call MessageBox
+		mov dword [esp], NULL
+		mov dword [esp+4], szCreateError
+		mov dword [esp+8], applicationTitle
+		mov dword [esp+12], MB_ICONERROR+MB_OK
+		call [MessageBox]
 		jmp exit
-		
-	exit:
+
+    exit:
 		sub esp, 4
 		mov eax, [msg.wParam]
 		mov dword [esp], eax
-		call ExitProcess
-	
-	proc WndProc uses ebx esi edi,hwnd,wmsg,wparam,lparam
-		cmp [wsmg], WM_CLOSE
-	endp
+		call [ExitProcess]
 
+    WndProc:
+		push ebp
+		mov ebp, esp
+		push ebx esi edi
+
+		cmp dword [ebp+12], WM_CLOSE
+		je destroyWindow
+
+		cmp dword [ebp+12], WM_DESTROY
+		je postQuitMessage
+
+		sub esp, 16
+		mov dword eax, [ebp+8] 
+		mov dword [esp], eax
+		mov dword eax, [ebp+12]
+		mov dword [esp+4], eax
+		mov dword eax, [ebp+16]
+		mov dword [esp+8], eax
+		mov dword eax, [ebp+20]
+		mov dword [esp+12], eax
+		call [DefWindowProc]
+		jmp done
+
+		destroyWindow:
+			sub esp, 4
+			mov eax, [ebp+8]
+			mov dword [esp], eax
+			call [DestroyWindow]
+			mov dword eax, 0
+			jmp done
+
+		postQuitMessage:
+			sub esp, 4
+			mov dword [esp], 0
+			call [PostQuitMessage]
+			mov dword eax, 0
+			jmp done
+
+		done:
+			pop ebp
+			pop edi esi ebx
+			ret
+    
 section '.data' data readable writeable
-	szClass 		db	"Win32app",0
-	applicationTitle db	"Win32 Application",0
-	szGreeting		db	"Hello, world!",0
-	szRegError		db	"Call to RegisterClassEx failed!",0
-	szCreateError	db	"Call to CreateWindowEx failed!",0
-	wcex			WNDCLASSEX
-	ps				PAINTSTRUCT
-	msg				MSG
-	windowHandle	dd	0
-	hdc				dd	0
+    szClass          db "Win32app",0
+    applicationTitle db "Win32 Application",0
+    szGreeting       db "Hello, world",0
+    szRegError       db "Call to RegisterClassEx failed",0
+    szCreateError    db "Call to CreateWindowEx failed",0
+    loadIconErrorMessage    db "Call to LoadIcon failed",0
+    wcex             WNDCLASSEX
+    ps               PAINTSTRUCT
+    msg              MSG
+    windowHandle     dd	0
+    hdc              dd 0
 
 section '.idata' import data readable writeable
-  library	kernel32,'KERNEL32.DLL',\
-			user32,'USER32.DLL',\
-			gdi, 'GDI32.DLL'
-  
-  import	kernel32,\
-			ExitProcess, 'ExitProcess',\
-			GetModuleHandle, 'GetModuleHandle'
-			
-  import	user32,\
-			RegisterClassEx, 'RegisterClassExA',\
-			CreateWindowEx, 'CreateWindowExA',\
-			ShowWindow, 'ShowWindow',\
-			UpdateWindow, 'UpdateWindow',\
-			GetMessage, 'GetMessageA',\
-			TranslateMessage, 'TranslateMessage',\
-			DispatchMessage, 'DispatchMessageA',\
-			MessageBox, 'MessageBoxA',\
-			DefWindowProc, 'DefWindowProcA',\
-			BeginPaint, 'BeginPaint',\
-			EndPaint, 'EndPaint',\
-			PostQuitMessage, 'PostQuitMessage',\
-			LoadIcon, 'LoadIconA',\
-			LoadCursor, 'LoadCursorA'
-			
+    library	kernel32,'KERNEL32.DLL',\
+	    user32,'USER32.DLL',\
+	    gdi, 'GDI32.DLL'
+
+	import	kernel32,\
+		ExitProcess, 'ExitProcess',\
+		GetModuleHandle, 'GetModuleHandleA'
+
+	include 'API\user32.inc'
+
 	import gdi,\
-			TextOut, 'TextOutA'
+		TextOut, 'TextOutA'
