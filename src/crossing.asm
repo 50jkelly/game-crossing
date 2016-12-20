@@ -13,29 +13,29 @@ section '.code' code readable executable
 
 		; Initialise the window
 
-		mov	dword [esp], NULL
+		mov dword [esp], NULL
 		call [GetModuleHandle]
-		mov	dword [wcex.hInstance], eax
-		mov	dword [esp], NULL
-		mov	dword [esp+4], IDI_APPLICATION
+		mov dword [wcex.hInstance], eax
+		mov dword [esp], NULL
+		mov dword [esp+4], IDI_APPLICATION
 		call [LoadIcon]
 		test eax, eax
 		jz loadIconError
-		mov	dword [wcex.hIcon], eax
-		mov	dword [wcex.hIconSm], eax
-		mov	dword [esp], NULL
-		mov	dword [esp+4], IDC_ARROW
+		mov dword [wcex.hIcon], eax
+		mov dword [wcex.hIconSm], eax
+		mov dword [esp], NULL
+		mov dword [esp+4], IDC_ARROW
 		call [LoadCursor]
-		mov	dword [wcex.hCursor], eax
-		mov	dword [wcex.hbrBackground], COLOR_WINDOW+1
+		mov dword [wcex.hCursor], eax
+		mov dword [wcex.hbrBackground], COLOR_WINDOW+1
 		mov dword [wcex.lpszClassName], szClass
 		mov dword [wcex.lpszMenuName], NULL
 		mov	eax, sizeof.WNDCLASSEX
-		mov	dword [wcex.cbSize], eax
-		mov	dword [wcex.style], CS_HREDRAW+CS_VREDRAW
-		mov	dword [wcex.lpfnWndProc], WndProc
-		mov	dword [wcex.cbClsExtra], 0
-		mov	dword [wcex.cbWndExtra], 0
+		mov dword [wcex.cbSize], eax
+		mov dword [wcex.style], CS_HREDRAW+CS_VREDRAW
+		mov dword [wcex.lpfnWndProc], WndProc
+		mov dword [wcex.cbClsExtra], 0
+		mov dword [wcex.cbWndExtra], 0
 		mov dword [esp], wcex
 		call [RegisterClassEx]
 		test eax, eax
@@ -94,30 +94,21 @@ section '.code' code readable executable
 		jmp messageLoop
 
 	loadIconError:
-		sub esp, 16
-		mov dword [esp], NULL
-		mov dword [esp+4], loadIconErrorMessage
-		mov dword [esp+8], applicationTitle
-		mov dword [esp+12], MB_ICONERROR+MB_OK
-		call [MessageBox]
+		sub esp, 4
+		mov dword [esp], loadIconErrorMessage
+		call ErrorMessageBox
 		jmp exit
 
 	regError:
-		sub esp, 16
-		mov dword [esp], NULL
-		mov dword [esp+4], szRegError
-		mov dword [esp+8], applicationTitle
-		mov dword [esp+12], MB_ICONERROR+MB_OK
-		call [MessageBox]
+		sub esp, 4
+		mov dword [esp], registerClassErrorMessage
+		call ErrorMessageBox
 		jmp exit
 
     createError:
-		sub esp, 16
-		mov dword [esp], NULL
-		mov dword [esp+4], szCreateError
-		mov dword [esp+8], applicationTitle
-		mov dword [esp+12], MB_ICONERROR+MB_OK
-		call [MessageBox]
+		sub esp, 4
+		mov dword [esp], createWindowErrorMessage
+		call ErrorMessageBox
 		jmp exit
 
     exit:
@@ -129,7 +120,7 @@ section '.code' code readable executable
     WndProc:
 		push ebp
 		mov ebp, esp
-		push ebx esi edi
+		sub esp, 16
 
 		cmp dword [ebp+12], WM_CLOSE
 		je destroyWindow
@@ -137,7 +128,6 @@ section '.code' code readable executable
 		cmp dword [ebp+12], WM_DESTROY
 		je postQuitMessage
 
-		sub esp, 16
 		mov dword eax, [ebp+8] 
 		mov dword [esp], eax
 		mov dword eax, [ebp+12]
@@ -166,21 +156,39 @@ section '.code' code readable executable
 
 		done:
 			pop ebp
-			pop edi esi ebx
 			ret
+	
+	ErrorMessageBox:
+		; Initialise stack frame
+		push ebp
+		mov ebp, esp
+
+		; Call the message box
+		mov dword [esp], NULL ; hWnd
+		mov dword eax, [ebp+8]
+		mov dword [esp+4], eax ; lpText
+		mov dword eax, [ebp+12]
+		mov dword [esp+8], applicationTitle ; lpCaption
+		mov dword [esp+12], MB_ICONERROR+MB_OK ; uType
+		call [MessageBox]
+
+		; Restore previous stack frame
+		pop ebp
+		ret
     
 section '.data' data readable writeable
-    szClass          db "Win32app",0
-    applicationTitle db "Win32 Application",0
-    szGreeting       db "Hello, world",0
-    szRegError       db "Call to RegisterClassEx failed",0
-    szCreateError    db "Call to CreateWindowEx failed",0
-    loadIconErrorMessage    db "Call to LoadIcon failed",0
-    wcex             WNDCLASSEX
-    ps               PAINTSTRUCT
-    msg              MSG
-    windowHandle     dd	0
-    hdc              dd 0
+    szClass 					db "CrossingMainWindow",0
+    applicationTitle 			db "Crossing",0
+    szGreeting 					db "Hello, world",0
+    registerClassErrorMessage 	db "Call to RegisterClassEx failed",0
+    createWindowErrorMessage    db "Call to CreateWindowEx failed",0
+    loadIconErrorMessage 		db "Call to LoadIcon failed",0
+    windowHandle 				dd	0
+    hdc 						dd 0
+
+    wcex 	WNDCLASSEX
+    ps 		PAINTSTRUCT
+    msg 	MSG
 
 section '.idata' import data readable writeable
     library	kernel32,'KERNEL32.DLL',\
