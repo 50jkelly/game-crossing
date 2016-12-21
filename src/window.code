@@ -1,0 +1,53 @@
+; void InitialiseWindow(dword icon, dword cursor, string* className, dword windowsProcedure)
+
+InitialiseWindow:
+
+	; Initialise the stack frame
+
+	push ebp
+	mov ebp, esp
+
+	; Initialise the window
+
+	sub esp, 4
+	mov dword [esp], NULL
+	call [GetModuleHandle]
+	mov dword [wcex.hInstance], eax
+
+	sub esp, 8
+	mov dword [esp], NULL
+	mov eax, [ebp+8]
+	mov dword [esp+4], eax
+	call [LoadIconA]
+	test eax, eax
+	jz loadIconError
+	mov dword [wcex.hIcon], eax
+	mov dword [wcex.hIconSm], eax
+
+	sub esp, 8
+	mov dword [esp], NULL
+	mov eax, [ebp+12]
+	mov dword [esp+4], eax
+	call [LoadCursorA]
+	mov dword [wcex.hCursor], eax
+
+	mov dword [wcex.hbrBackground], COLOR_WINDOW+1
+	mov eax, [ebp+16]
+	mov dword [wcex.lpszClassName], eax
+	mov dword [wcex.lpszMenuName], NULL
+	mov	eax, sizeof.WNDCLASSEX
+	mov dword [wcex.cbSize], eax
+	mov dword [wcex.style], CS_HREDRAW+CS_VREDRAW
+	mov eax, [ebp+20]
+	mov dword [wcex.lpfnWndProc], eax
+	mov dword [wcex.cbClsExtra], 0
+	mov dword [wcex.cbWndExtra], 0
+
+	sub esp, 4
+	mov dword [esp], wcex
+	call [RegisterClassExA]
+	test eax, eax
+	jz regError
+
+	pop ebp
+	ret 16

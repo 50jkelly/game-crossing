@@ -4,50 +4,8 @@ entry start
 include 'win32a.inc'
 
 section '.code' code readable executable
-
-		InitialiseWindow:
-
-			; Initialise the stack frame
-
-			push ebp
-			mov ebp, esp
-
-			; Initialise the window
-
-			sub esp, 4
-			mov dword [esp], NULL
-			call [GetModuleHandle]
-			mov dword [wcex.hInstance], eax
-			sub esp, 8
-			mov dword [esp], NULL
-			mov dword [esp+4], IDI_APPLICATION
-			call [LoadIconA]
-			test eax, eax
-			jz loadIconError
-			mov dword [wcex.hIcon], eax
-			mov dword [wcex.hIconSm], eax
-			sub esp, 8
-			mov dword [esp], NULL
-			mov dword [esp+4], IDC_ARROW
-			call [LoadCursorA]
-			mov dword [wcex.hCursor], eax
-			mov dword [wcex.hbrBackground], COLOR_WINDOW+1
-			mov dword [wcex.lpszClassName], szClass
-			mov dword [wcex.lpszMenuName], NULL
-			mov	eax, sizeof.WNDCLASSEX
-			mov dword [wcex.cbSize], eax
-			mov dword [wcex.style], CS_HREDRAW+CS_VREDRAW
-			mov dword [wcex.lpfnWndProc], WndProc
-			mov dword [wcex.cbClsExtra], 0
-			mov dword [wcex.cbWndExtra], 0
-			sub esp, 4
-			mov dword [esp], wcex
-			call [RegisterClassExA]
-			test eax, eax
-			jz regError
-
-			pop ebp
-			ret
+	include 'message-box.code'
+	include 'window.code'
 
 		NewWindow:
 
@@ -58,7 +16,7 @@ section '.code' code readable executable
 
 			sub esp, 48
 			mov dword [esp], 0
-			mov dword [esp+4], szClass
+			mov dword [esp+4], mainWindowClass
 			mov dword [esp+8], applicationTitle
 			mov dword [esp+12], WS_OVERLAPPEDWINDOW
 			mov dword [esp+16], CW_USEDEFAULT
@@ -152,24 +110,6 @@ section '.code' code readable executable
 			pop ebp
 			ret
 	
-	ErrorMessageBox:
-		; Initialise stack frame
-		push ebp
-		mov ebp, esp
-
-		; Call the message box
-		sub esp, 16
-		mov dword [esp], NULL ; hWnd
-		mov dword eax, [ebp+8]
-		mov dword [esp+4], eax ; lpText
-		mov dword eax, [ebp+12]
-		mov dword [esp+8], applicationTitle ; lpCaption
-		mov dword [esp+12], MB_ICONERROR+MB_OK ; uType
-		call [MessageBoxA]
-
-		; Restore previous stack frame
-		pop ebp
-		ret
 
 	start:
 		; Initialise the stack frame
@@ -177,6 +117,11 @@ section '.code' code readable executable
 		push ebp
 		mov ebp, esp
 
+		sub esp, 16
+		mov dword [esp], IDI_APPLICATION
+		mov dword [esp+4], IDC_ARROW
+		mov dword [esp+8], mainWindowClass
+		mov dword [esp+12], WndProc
 		call InitialiseWindow
 		call NewWindow
 		call NewWindow
@@ -187,7 +132,7 @@ section '.code' code readable executable
 
     
 section '.data' data readable writeable
-    szClass 					db "CrossingMainWindow",0
+    mainWindowClass				db "CrossingMainWindow",0
     applicationTitle 			db "Crossing",0
     szGreeting 					db "Hello, world",0
     registerClassErrorMessage 	db "Call to RegisterClassEx failed",0
