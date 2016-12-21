@@ -21,7 +21,7 @@ section '.code' code readable executable
 			sub esp, 8
 			mov dword [esp], NULL
 			mov dword [esp+4], IDI_APPLICATION
-			call [LoadIcon]
+			call [LoadIconA]
 			test eax, eax
 			jz loadIconError
 			mov dword [wcex.hIcon], eax
@@ -29,7 +29,7 @@ section '.code' code readable executable
 			sub esp, 8
 			mov dword [esp], NULL
 			mov dword [esp+4], IDC_ARROW
-			call [LoadCursor]
+			call [LoadCursorA]
 			mov dword [wcex.hCursor], eax
 			mov dword [wcex.hbrBackground], COLOR_WINDOW+1
 			mov dword [wcex.lpszClassName], szClass
@@ -42,7 +42,7 @@ section '.code' code readable executable
 			mov dword [wcex.cbWndExtra], 0
 			sub esp, 4
 			mov dword [esp], wcex
-			call [RegisterClassEx]
+			call [RegisterClassExA]
 			test eax, eax
 			jz regError
 
@@ -69,7 +69,7 @@ section '.code' code readable executable
 			mov dword [esp+36], NULL
 			mov dword [esp+40], wcex.hInstance
 			mov dword [esp+44], NULL
-			call [CreateWindowEx]
+			call [CreateWindowExA]
 			test eax, eax
 			jz createError
 			mov [windowHandle], eax
@@ -89,7 +89,7 @@ section '.code' code readable executable
 			mov dword [esp+4], NULL
 			mov dword [esp+8], 0
 			mov dword [esp+12], 0
-			call [GetMessage]
+			call [GetMessageA]
 			cmp eax, 0
 			je exit
 			sub esp, 4
@@ -97,7 +97,7 @@ section '.code' code readable executable
 			call [TranslateMessage]
 			sub esp, 4
 			mov dword [esp], msg
-			call [DispatchMessage]
+			call [DispatchMessageA]
 			jmp messageLoop
 
 		loadIconError:
@@ -140,7 +140,7 @@ section '.code' code readable executable
 		mov dword [esp+8], eax
 		mov dword eax, [ebp+20]
 		mov dword [esp+12], eax
-		call [DefWindowProc]
+		call [DefWindowProcA]
 		jmp done
 
 		destroy:
@@ -165,7 +165,7 @@ section '.code' code readable executable
 		mov dword eax, [ebp+12]
 		mov dword [esp+8], applicationTitle ; lpCaption
 		mov dword [esp+12], MB_ICONERROR+MB_OK ; uType
-		call [MessageBox]
+		call [MessageBoxA]
 
 		; Restore previous stack frame
 		pop ebp
@@ -209,7 +209,18 @@ section '.idata' import data readable writeable
 		ExitProcess, 'ExitProcess',\
 		GetModuleHandle, 'GetModuleHandleA'
 
-	include 'API\user32.inc'
+	import user32,\
+		LoadIconA, 'LoadIconA',\
+		LoadCursorA, 'LoadCursorA',\
+		RegisterClassExA, 'RegisterClassExA',\
+		CreateWindowExA, 'CreateWindowExA',\
+		ShowWindow, 'ShowWindow',\
+		GetMessageA, 'GetMessageA',\
+		TranslateMessage, 'TranslateMessage',\
+		DispatchMessageA,'DispatchMessageA',\
+		DefWindowProcA,'DefWindowProcA',\
+		PostQuitMessage,'PostQuitMessage',\
+		MessageBoxA,'MessageBoxA'
 
 	import gdi,\
 		TextOut, 'TextOutA'
