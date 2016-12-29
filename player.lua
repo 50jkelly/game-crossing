@@ -9,16 +9,10 @@ frames["down"] = {}
 frames["left"] = {}
 frames["right"] = {}
 local currentFrames = frames["down"]
-local direction = "none"
 
--- Position
-local x = 0
-local y = 0
-local speed = 2
-
-local function cycleFrames()
+local function cycleFrames(dt)
 	-- Maintain time since last player animation update
-	timeSinceLastFrame = timeSinceLastFrame + love.timer.getDelta()	
+	timeSinceLastFrame = timeSinceLastFrame + dt
 
 	-- Cycle the frames
 	if timeSinceLastFrame > 1 / framesPerSecond then
@@ -31,6 +25,8 @@ local function cycleFrames()
 end
 
 local player = {}
+player["speed"] = 100
+player["direction"] = "none"
 
 function player.load()
 	for key,value in pairs(frames) do
@@ -40,45 +36,29 @@ function player.load()
 	end
 end
 
-function player.update(controls)
+function player.update(dt)
 	-- Determine movement direction based on keyboard input
-	direction = "none"
+	player["direction"] = "none"
 
 	if love.keyboard.isDown(controls["up"]) then
-		direction = "up"
+		player["direction"] = "up"
 	elseif love.keyboard.isDown(controls["down"]) then
-		direction = "down"
+		player["direction"] = "down"
 	elseif love.keyboard.isDown(controls["left"]) then
-		direction = "left"
+		player["direction"] = "left"
 	elseif love.keyboard.isDown(controls["right"]) then
-		direction = "right"
+		player["direction"] = "right"
 	end
 
-	-- Adjust the player's position based on the direction they are moving
-	if direction == "up" then
-		y = y - speed
-	end
-
-	if direction == "down" then
-		y = y + speed
-	end
-
-	if direction == "left" then
-		x = x - speed
-	end
-
-	if direction == "right" then
-		x = x + speed
-	end
-
-	-- Adjust the player's animation based on the direction they are moving
-	if direction ~= "none" then
-		currentFrames = frames[direction]
-		cycleFrames()
+	if player["direction"] ~= "none" then
+		currentFrames = frames[player["direction"]]
+		cycleFrames(dt)
 	end
 end
 
-function player.draw()
+function player.draw(viewport)
+	local x = viewport["width"] / 2
+	local y = viewport["height"] / 2
 	love.graphics.draw(currentFrames[frameCounter], x, y, 0, 1.5, 1.5, 0, 0)
 end
 
