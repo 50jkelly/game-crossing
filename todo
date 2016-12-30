@@ -1,0 +1,3 @@
+- Compress multiple part object code
+- Enhance layers so when items are added to a layer, the layer remains ordered
+	- The order should be that items with lower Y values are drawn first

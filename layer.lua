@@ -1,28 +1,63 @@
 local layers = {}
 local data = {}
 
-function layers.addItem(layer, item)
-	-- Add layers up to the requested layer if it doesn't already exist
-	local tableSize = table.getn(data)
-	if tableSize < layer then
-		for i=tableSize, layer, 1 do
-			table.insert(data, {})
-		end
-	end
+-- Public functions
 
-	-- Add the item to the requested layer
-	table.insert(data[layer], item)
+function layers.addItem(item)
+	local tableSize = table.getn(data)
+
+	-- Iterate over the item parts
+	for _, part in pairs(item["parts"]) do
+
+		-- Add layers up to the requested layer if it doesn't already exist
+		if tableSize < part["layer"] then
+			for i=tableSize, part["layer"], 1 do
+				table.insert(data, {})
+			end
+		end
+
+		-- Add the part to the appropriate layer
+		addToLayer(part)
+	end
 end
 
-function layers.draw(layer, viewport)
+function layers.draw(layerIndex, viewport)
 	love.graphics.push()
 	love.graphics.translate(-viewport["x"], -viewport["y"])
 
-	for key, item in pairs(data[layer]) do
-		item.draw()
+	local layer = data[layerIndex]
+	for _, part in pairs(layer) do
+		love.graphics.draw(part["sprite"], part["x"], part["y"], 0, 1, 1, 0, 0)
 	end
 
 	love.graphics.pop()
+end
+
+-- Private functions
+
+function addToLayer(part)
+	local continueSearch = true
+	local layer = data[part["layer"]]
+	local numberOfParts = table.getn(layer)
+
+	for i=numberOfParts, 1, 1 do
+		local existingPart = layer[i]
+
+		if existingPart == nil then
+			table.insert(layer, part)
+			continueSearch = false
+		end
+
+		if continueSearch == true and existingPart["y"] > part["y"] then
+			table.insert(layer, i, part)
+			continueSearch = false
+		end
+	end
+
+	local notFound = continueSearch
+	if notFound == true then
+		table.insert(layer, part)
+	end
 end
 
 return layers
