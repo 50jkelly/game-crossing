@@ -1,26 +1,15 @@
 local viewport = {}
 
-viewport["x"] = 0
-viewport["y"] = 0
-viewport["width"] = 600
-viewport["height"] = 600
+function viewport.load(x, y, width, height)
+	viewport.x = x
+	viewport.y = y
+	viewport.width = width
+	viewport.height = height
+end
 
-function viewport.update(dt, direction, speed)
-	if direction == "up" then
-		viewport["y"] = viewport["y"] - (dt * speed)
-	end
-
-	if direction == "down" then
-		viewport["y"] = viewport["y"] + (dt * speed)
-	end
-
-	if direction == "left" then
-		viewport["x"] = viewport["x"] - (dt * speed)
-	end
-
-	if direction == "right" then
-		viewport["x"] = viewport["x"] + (dt * speed)
-	end
+function viewport.update(player)
+	viewport.x = player.worldX - (viewport.width / 2) + player.worldWidth + player.drawXOffset
+	viewport.y = player.worldY - (viewport.height / 2) + player.worldHeight + player.drawYOffset
 end
 
 return viewport

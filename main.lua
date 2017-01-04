@@ -2,48 +2,65 @@ viewport = require "viewport"
 player = require "player"
 layers = require "layer"
 items = require "items"
+trees = require "trees"
+
+-- General game information
+local screenWidth = 800
+local screenHeight = 600
+local drawWorldPosition = false
 
 -- Controls
-controls = {}
-controls["up"] = "w"
-controls["down"] = "s"
-controls["left"] = "a"
-controls["right"] = "d"
+local controls = {}
+controls.up = "w"
+controls.down = "s"
+controls.left= "a"
+controls.right = "d"
+
+-- Drawing items
+items = {}
 
 function love.load()
+	viewport.load(0, 0, screenWidth, screenHeight)
 	player.load()
 
-	treeTop = love.graphics.newImage("images/tree_1_top.png")
-	treeBottom = love.graphics.newImage("images/tree_1_bottom.png")
+	tree1Sprite = love.graphics.newImage("images/tree1.png")
+	table.insert(items, player)
 
-	-- Test trees
-	tree1 = items.new(100, 100, 182, 200)
-	tree1 = items.addPart(tree1, {height=160, layer=2, sprite=treeTop})
-	tree1 = items.addPart(tree1, {y = tree1["y"] + 160, height=40, layer=1, sprite=treeBottom})
-
-	tree2 = items.new(300, 100, 182, 200)
-	tree2 = items.addPart(tree2, {height=160, layer=2, sprite=treeTop})
-	tree2 = items.addPart(tree2, {y = tree2["y"] + 160, height=40, layer=1, sprite=treeBottom})
-
-	-- Add items to the drawing layers
-	layers.addItem(tree1)
-	layers.addItem(tree2)
+	-- Plant a forest
+	for i=1, 200, 1 do
+		local x = math.random(-1000, 1000)
+		local y = math.random(-1000, 1000)
+		table.insert(items, trees.new(x, y, tree1Sprite))
+	end
 end
 
 function love.update(dt)
-	viewport.update(dt, player["direction"], player.speed)
-	player.update(dt)
+	viewport.update(player)
+	player.update(dt, controls, items)
 end
 
 function love.draw()
+	love.graphics.push()
+	love.graphics.translate(-viewport.x, -viewport.y)
+
+	-- Set background colour
 	love.graphics.setBackgroundColor(140, 225, 120)
 
-	-- Draw layers behind the player
-	layers.draw(1, viewport)
+	-- We need to sort the items ordered by their worldY value ascending
+	table.sort(items, function(a, b)
+		return a.worldY < b.worldY
+	end)
 
-	-- Draw the player
-	player.draw(viewport)
+	-- Draw all items
+	for _, item in ipairs(items) do
+		love.graphics.draw(item.sprite, item.worldX + item.drawXOffset, item.worldY + item.drawYOffset, 0, 1, 1, 0, 0)
 
-	-- Draw layers in front of the player
-	layers.draw(2, viewport)
+		if drawWorldPosition then
+			love.graphics.setColor(255, 0, 0, 100)
+			love.graphics.rectangle("fill", item.worldX, item.worldY, item.worldWidth, item.worldHeight)
+			love.graphics.setColor(255,255,255,255)
+		end
+	end
+
+	love.graphics.pop()
 end
