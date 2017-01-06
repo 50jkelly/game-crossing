@@ -1,10 +1,10 @@
 animation = require("animation")
-collision = require("collision")
 
 local player = {}
 
 local playerItem = {
 	id = "player",
+	canMove = true,
 	speed = 100,
 	direction = "none",
 	state = "walk_down",
@@ -21,58 +21,74 @@ local playerItem = {
 function player.load(data)
 	animation.load("player")
 	animation.setInitialState(playerItem.state)
+	player.collisionState = "none"
 	data.player = playerItem
 	table.insert(data.items, playerItem)
 	return data
 end
 
-function playerItem.update(data)
-	-- Determine movement direction based on keyboard input
-	local playerMoved = false
-	for key, _ in pairs(data.controls) do
-		if love.keyboard.isDown(data.controls[key]) then
-			playerItem.state = "walk_"..key
-			playerMoved = true
-		end
-	end
+function player.keyDown(data)
+	playerItem.state = "walk_"..data.plugins.controls.currentKey
+	player.moved = true
+	return data
+end
 
-	-- Move the playerItem's x and y position based on their state
-	if playerMoved then
+function player.collision(data)
+	player.colliding = data.plugins.collision.colliding.id == playerItem.id
+	player.collisionDirection = data.plugins.collision.directions
+	player.collidingWith = data.plugins.collision.collidingWith
+	return data
+end
+
+function playerItem.update(data)
+	playerItem.oldX = playerItem.x
+	playerItem.oldY = playerItem.y
+	print(player.collisionState)
+
+	if player.moved then
 		local moveDistance = playerItem.speed * data.dt
 		if playerItem.state == "walk_up" then
-			playerItem.futureY = playerItem.y - moveDistance
+			if player.collisionState ~= "walk_up" then
+				playerItem.y = playerItem.y - moveDistance
+			end
 		end
 		if playerItem.state == "walk_down" then
-			playerItem.futureY = playerItem.y + moveDistance
+			if player.collisionState ~= "walk_down" then
+				playerItem.y = playerItem.y + moveDistance
+			end
 		end
 		if playerItem.state == "walk_left" then
-			playerItem.futureX = playerItem.x - moveDistance
+			if player.collisionState ~= "walk_left" then
+				playerItem.x = playerItem.x - moveDistance
+			end
 		end
 		if playerItem.state == "walk_right" then
-			playerItem.futureX = playerItem.x + moveDistance
+			if player.collisionState ~= "walk_right" then
+				playerItem.x = playerItem.x + moveDistance
+			end
 		end
 	end
 
-	-- Commit the future playerItem's location to the current playerItem's if the future
-	-- playerItem's movement does not cause a collision
-	local futureplayerItem = {
-		id = playerItem.id,
-		x = playerItem.futureX,
-		y = playerItem.futureY,
-		width = playerItem.width,
-		height = playerItem.height
-	}
-
-	if playerMoved and not collision.checkCollisions(futureplayerItem, data.items) then
-		playerItem.x = playerItem.futureX
-		playerItem.y = playerItem.futureY
-		animation.cycleFrames(data.dt, playerItem.state)
+	if player.colliding then
+		if player.collisionState == "none" then
+			player.collisionState = playerItem.state
+		end
 	else
+		player.collisionState = "none"
+	end
+
+	if player.moved and player.collisionState ~= playerItem.state then
+		animation.cycleFrames(data.dt, playerItem.state)
+	end
+
+	if player.collisionState == playerItem.state then
 		animation.reset()
 	end
 
-	playerItem.sprite = animation.getCurrentSprite()
 
+	playerItem.sprite = animation.getCurrentSprite()
+	player.moved = false
+	player.colliding = false
 	return data
 end
 

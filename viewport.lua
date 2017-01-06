@@ -20,4 +20,15 @@ function viewport.update(data)
 	return data
 end
 
+function viewport.preDraw(data)
+	love.graphics.push()
+	love.graphics.translate(-viewport.x, -viewport.y)
+	return data
+end
+
+function viewport.postDraw(data)
+	love.graphics.pop()
+	return data
+end
+
 return viewport
