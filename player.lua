@@ -1,106 +1,79 @@
--- Animation data: TO BE MOVED
-local numberOfFrames = 8
-local frameCounter = 1
-local framesPerSecond = 10
-local timeSinceLastFrame = 0
-local frames = {}
-frames["up"] = {}
-frames["down"] = {}
-frames["left"] = {}
-frames["right"] = {}
-local currentFrames = frames["down"]
+animation = require("animation")
+collision = require("collision")
 
--- Player data
-local player = {
+local player = {}
+
+local playerItem = {
 	id = "player",
 	speed = 100,
 	direction = "none",
-	worldX = 100,
-	worldY = 100,
-	worldWidth = 20,
-	worldHeight = 10,
+	state = "walk_down",
+	x = 100,
+	y = 100,
+	futureX = 100,
+	futureY = 100,
+	width = 20,
+	height = 10,
 	drawXOffset = 0,
 	drawYOffset = -16
 }
 
-local function cycleFrames(dt)
-	-- Maintain time since last player animation update
-	timeSinceLastFrame = timeSinceLastFrame + dt
-
-	-- Cycle the frames
-	if timeSinceLastFrame > 1 / framesPerSecond then
-		timeSinceLastFrame = 0
-		frameCounter = frameCounter + 1
-		if frameCounter > numberOfFrames then
-			frameCounter = 1
-		end
-	end
+function player.load(data)
+	animation.load("player")
+	animation.setInitialState(playerItem.state)
+	data.player = playerItem
+	table.insert(data.items, playerItem)
+	return data
 end
 
-function player.load()
-	for key,value in pairs(frames) do
-		for i=1, numberOfFrames do
-			value[i] = love.graphics.newImage("images/player_walk_" .. key .. "_" .. i .. ".png")
-		end
-	end
-end
-
--- Collision functions: TO BE MOVED
-function colliding(item1, item2)
-	return not (item1.worldX + item1.worldWidth < item2.worldX
-		or item2.worldX + item2.worldWidth < item1.worldX
-		or item1.worldY + item1.worldHeight < item2.worldY
-		or item2.worldY + item2.worldHeight < item1.worldY)
-end
-
-function checkCollisions(mainItem, items)
-	for _, item in ipairs(items) do
-		local skip = mainItem.id == item.id
-		if not skip and colliding(mainItem, item) then return true end
-	end
-	return false
-end
-
-function player.update(dt, controls, items)
+function playerItem.update(data)
 	-- Determine movement direction based on keyboard input
-	player["direction"] = "none"
+	local playerMoved = false
+	for key, _ in pairs(data.controls) do
+		if love.keyboard.isDown(data.controls[key]) then
+			playerItem.state = "walk_"..key
+			playerMoved = true
+		end
+	end
 
-	-- Initialise the future player so we can do collision predictions
-	local futurePlayer = {
-		id = player.id,
-		worldWidth = player.worldWidth,
-		worldHeight = player.worldHeight,
-		worldX = player.worldX,
-		worldY = player.worldY
+	-- Move the playerItem's x and y position based on their state
+	if playerMoved then
+		local moveDistance = playerItem.speed * data.dt
+		if playerItem.state == "walk_up" then
+			playerItem.futureY = playerItem.y - moveDistance
+		end
+		if playerItem.state == "walk_down" then
+			playerItem.futureY = playerItem.y + moveDistance
+		end
+		if playerItem.state == "walk_left" then
+			playerItem.futureX = playerItem.x - moveDistance
+		end
+		if playerItem.state == "walk_right" then
+			playerItem.futureX = playerItem.x + moveDistance
+		end
+	end
+
+	-- Commit the future playerItem's location to the current playerItem's if the future
+	-- playerItem's movement does not cause a collision
+	local futureplayerItem = {
+		id = playerItem.id,
+		x = playerItem.futureX,
+		y = playerItem.futureY,
+		width = playerItem.width,
+		height = playerItem.height
 	}
 
-	if love.keyboard.isDown(controls["up"]) then
-		player["direction"] = "up"
-		futurePlayer.worldY = player.worldY - (player.speed * dt)
-	elseif love.keyboard.isDown(controls["down"]) then
-		player["direction"] = "down"
-		futurePlayer.worldY = player.worldY + (player.speed * dt)
-	elseif love.keyboard.isDown(controls["left"]) then
-		player["direction"] = "left"
-		futurePlayer.worldX = player.worldX - (player.speed * dt)
-	elseif love.keyboard.isDown(controls["right"]) then
-		player["direction"] = "right"
-		futurePlayer.worldX = player.worldX + (player.speed * dt)
+	if playerMoved and not collision.checkCollisions(futureplayerItem, data.items) then
+		playerItem.x = playerItem.futureX
+		playerItem.y = playerItem.futureY
+		animation.cycleFrames(data.dt, playerItem.state)
+	else
+		animation.reset()
 	end
 
-	-- Commit the future player's location to the current player's if the future
-	-- player's movement does not cause a collision
-	if not checkCollisions(futurePlayer, items) then
-		player.worldX = futurePlayer.worldX
-		player.worldY = futurePlayer.worldY
-	end
+	playerItem.sprite = animation.getCurrentSprite()
 
-	if player["direction"] ~= "none" then
-		currentFrames = frames[player["direction"]]
-		cycleFrames(dt)
-	end
-
-	player.sprite = currentFrames[frameCounter]
+	return data
 end
 
 return player
