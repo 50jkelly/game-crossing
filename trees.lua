@@ -1,6 +1,6 @@
 local trees = {}
 
-function trees.initialise(data)
+function trees.initialise()
 	local tree1Sprite = love.graphics.newImage("images/tree1.png")
 
 	-- Plant a forest
@@ -9,8 +9,6 @@ function trees.initialise(data)
 		local y = math.random(-1000, 1000)
 		table.insert(data.items, newTree(x, y, tree1Sprite))
 	end
-
-	return data
 end
 
 function newTree(x, y, sprite)

@@ -1,6 +1,6 @@
 local collision = {}
 
-function collision.update(data)
+function collision.update()
 	-- Iterate over all items that can move and check if they are colliding with anything
 	for _, item in ipairs(data.items) do
 		if item.canMove and checkCollisions(item, data.items) then
@@ -8,8 +8,6 @@ function collision.update(data)
 			callHook('plugins', 'collision')
 		end
 	end
-
-	return data
 end
 
 -- Private functions

@@ -6,7 +6,7 @@ local animation = {}
 -- We load the animations of an entity by finding all of its frames on disk
 -- and loading them into a table. The frames' filenames are used to determine
 -- what state they belong to and what order they appear in the animation.
-function animation.loadGraphics(data)
+function animation.loadGraphics()
 	for _, item in ipairs(data.items) do
 		if item.animationPrefix ~= nil then
 			item.frames = {}
@@ -22,11 +22,9 @@ function animation.loadGraphics(data)
 			end
 		end
 	end
-
-	return data
 end
 
-function animation.update(data)
+function animation.update()
 	for _, item in ipairs(data.items) do
 		if item.resetAnimation then
 			reset(item)
@@ -36,7 +34,6 @@ function animation.update(data)
 		item.resetAnimation = false
 		item.cycleAnimation = false
 	end
-	return data
 end
 
 function reset(item)
@@ -44,7 +41,7 @@ function reset(item)
 	item.sprite = item.frames[item.state][item.frameCounter]
 end
 
-function cycleFrames(item, data)
+function cycleFrames(item)
 	-- Maintain time since last player animation update
 	item.timeSinceLastFrame = item.timeSinceLastFrame + data.dt
 

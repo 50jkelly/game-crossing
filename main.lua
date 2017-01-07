@@ -1,5 +1,5 @@
 -- Data
-local data = {
+data = {
 	screenWidth = 800,
 	screenHeight = 600,
 	items = {},
@@ -14,6 +14,7 @@ data.plugins = {
 	collision = require "collision",
 	animation = require "animation",
 	player = require "player",
+	messageBox = require "messageBox",
 	trees = require "trees"
 }
 
@@ -40,13 +41,13 @@ function love.draw()
 	callHook('plugins', 'preDraw')
 	callHook('plugins', 'draw')
 	callHook('plugins', 'postDraw')
-
+	callHook('plugins', 'drawUI')
 end
 
 function callHook(collection, method)
 	for _, value in pairs(data[collection]) do
 		if value[method] ~= nil then
-			data = value[method](data)
+			value[method]()
 		end
 	end
 end

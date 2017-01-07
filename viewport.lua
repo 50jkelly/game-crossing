@@ -5,32 +5,28 @@ local viewport = {
 	height = 0
 }
 
-function viewport.initialise(data)
+function viewport.initialise()
 	viewport.x = 0
 	viewport.y = 0
 	viewport.width = data.screenWidth
 	viewport.height = data.screenHeight
-	return data
 end
 
-function viewport.update(data)
+function viewport.update()
 	local player = data.player
 	if player then
 		viewport.x = player.x - (viewport.width / 2) + player.width + player.drawXOffset
 		viewport.y = player.y - (viewport.height / 2) + player.height + player.drawYOffset
 	end
-	return data
 end
 
-function viewport.preDraw(data)
+function viewport.preDraw()
 	love.graphics.push()
 	love.graphics.translate(-viewport.x, -viewport.y)
-	return data
 end
 
-function viewport.postDraw(data)
+function viewport.postDraw()
 	love.graphics.pop()
-	return data
 end
 
 return viewport

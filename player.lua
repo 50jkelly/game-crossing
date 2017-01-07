@@ -2,6 +2,7 @@ local player = {
 	collisionState = "none"
 }
 
+
 local playerItem = {
 	id = "player",
 	animationPrefix = "player",
@@ -20,26 +21,49 @@ local playerItem = {
 	drawYOffset = -16
 }
 
-function player.initialise(data)
+function player.initialise()
+	player.messageBoxes = {}
 	data.player = playerItem
 	table.insert(data.items, playerItem)
-	return data
 end
 
-function player.keyDown(data)
-	playerItem.state = "walk_"..data.plugins.controls.currentKey
-	player.moved = true
-	return data
+function player.keyDown()
+	local key = data.plugins.controls.currentKeyDown
+
+	if key == "up" or key =="down" or key == "left" or key == "right" then
+		playerItem.state = "walk_"..key
+		player.moved = true
+	end
 end
 
-function player.collision(data)
+function player.keyPressed()
+	local key = data.plugins.controls.currentKeyPressed
+	if key == "use" then
+		showMessageBox()
+	end
+end
+
+function showMessageBox()
+	if table.getn(player.messageBoxes) == 0 then
+		table.insert(player.messageBoxes, {
+			x = 50,
+			y = 425,
+			width = 100,
+			height = 150,
+			text = "Hello! This should span multiple lines."
+		})
+	else
+		table.remove(player.messageBoxes)
+	end
+end
+
+function player.collision()
 	player.colliding = data.plugins.collision.colliding.id == playerItem.id
 	player.collisionDirection = data.plugins.collision.directions
 	player.collidingWith = data.plugins.collision.collidingWith
-	return data
 end
 
-function playerItem.update(data)
+function playerItem.update()
 	playerItem.oldX = playerItem.x
 	playerItem.oldY = playerItem.y
 
@@ -85,7 +109,6 @@ function playerItem.update(data)
 
 	player.moved = false
 	player.colliding = false
-	return data
 end
 
 return player

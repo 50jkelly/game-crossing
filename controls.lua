@@ -4,17 +4,33 @@ controls.keys = {
 	up = "w",
 	down = "s",
 	left= "a",
-	right = "d"
+	right = "d",
+	use = 'e'
 }
 
-function controls.update(data)
+function controls.update()
 	for key, _ in pairs(controls.keys) do
 		if love.keyboard.isDown(controls.keys[key]) then
-			controls.currentKey = key
+			controls.currentKeyDown = key
 			callHook('plugins', 'keyDown')
 		end
 	end
-	return data
 end
+
+function love.keypressed(key)
+	local action = nil
+
+	for k, _ in pairs(controls.keys) do
+		if controls.keys[k] == key then
+			action = k
+		end
+	end
+
+	if action then
+		controls.currentKeyPressed = action
+		callHook('plugins', 'keyPressed')
+	end
+end
+
 
 return controls

@@ -1,6 +1,6 @@
 local renderer = {}
 
-function renderer.draw(data)
+function renderer.draw()
 	table.sort(data.items, function(a, b)
 		return a.y < b.y
 	end)
@@ -18,7 +18,6 @@ function renderer.draw(data)
 			love.graphics.setColor(255,255,255,255)
 		end
 	end
-	return data
 end
 
 return renderer
