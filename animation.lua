@@ -1,10 +1,4 @@
 local animation = {}
-local frames = {}
-local state = nil
-local currentSprite = nil
-local timeSinceLastFrame = 0
-local frameCounter = 1
-local framesPerSecond = 8
 
 -- Animations for an entity are broken down into states, and each state is
 -- made up of a number of frames.
@@ -12,46 +6,59 @@ local framesPerSecond = 8
 -- We load the animations of an entity by finding all of its frames on disk
 -- and loading them into a table. The frames' filenames are used to determine
 -- what state they belong to and what order they appear in the animation.
-function animation.load(entityPrefix)
-  local files = getFiles(entityPrefix)
-  for _, file in ipairs(files) do
-    local state = getState(file, entityPrefix)
-    addState(state)
-    addFrame(state, file)
-  end
-end
-
-function animation.setInitialState(_state)
-  state = _state
-  currentSprite = frames[state][frameCounter]
-end
-
-function animation.reset()
-  frameCounter = 1
-  currentSprite = frames[state][frameCounter]
-end
-
-function animation.cycleFrames(dt, _state)
-	-- Maintain time since last player animation update
-	timeSinceLastFrame = timeSinceLastFrame + dt
-
-  state = _state
-
-	-- Cycle the frames
-	if timeSinceLastFrame > 1 / framesPerSecond then
-		timeSinceLastFrame = 0
-		frameCounter = frameCounter + 1
-		if frameCounter > table.getn(frames[state]) then
-			frameCounter = 1
+function animation.loadGraphics(data)
+	for _, item in ipairs(data.items) do
+		if item.animationPrefix ~= nil then
+			item.frames = {}
+			item.timeSinceLastFrame = 0
+			item.frameCounter = 1
+			item.resetAnimation = true
+			item.cycleAnimation = false
+			local files = getFiles(item.animationPrefix)
+			for _, file in ipairs(files) do
+				local state = getState(file, item.animationPrefix)
+				item.frames = addState(item.frames, state)
+				item.frames = addFrame(item.frames, state, file)
+			end
 		end
 	end
 
-  -- Set the current sprite
-  currentSprite = frames[state][frameCounter]
+	return data
 end
 
-function animation.getCurrentSprite()
-  return currentSprite
+function animation.update(data)
+	for _, item in ipairs(data.items) do
+		if item.resetAnimation then
+			reset(item)
+		elseif item.cycleAnimation then
+			cycleFrames(item, data)
+		end
+		item.resetAnimation = false
+		item.cycleAnimation = false
+	end
+	return data
+end
+
+function reset(item)
+	item.frameCounter = 1
+	item.sprite = item.frames[item.state][item.frameCounter]
+end
+
+function cycleFrames(item, data)
+	-- Maintain time since last player animation update
+	item.timeSinceLastFrame = item.timeSinceLastFrame + data.dt
+
+	-- Cycle the frames
+	if item.timeSinceLastFrame > 1 / item.framesPerSecond then
+		item.timeSinceLastFrame = 0
+		item.frameCounter = item.frameCounter + 1
+		if item.frameCounter > table.getn(item.frames[item.state]) then
+			item.frameCounter = 1
+		end
+	end
+
+	-- Set the current sprite
+	item.sprite = item.frames[item.state][item.frameCounter]
 end
 
 -- Private functions
@@ -68,14 +75,16 @@ function getState(file, entityPrefix)
   return string.match(file, entityPrefix..'_(.+)_%d')
 end
 
-function addState(state)
+function addState(frames, state)
   if frames[state] == nil then
     frames[state] = {}
   end
+  return frames
 end
 
-function addFrame(state, file)
+function addFrame(frames, state, file)
   table.insert(frames[state], love.graphics.newImage(file))
+  return frames
 end
 
 return animation

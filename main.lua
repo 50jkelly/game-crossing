@@ -12,6 +12,7 @@ data.plugins = {
 	renderer = require "renderer",
 	controls = require "controls",
 	collision = require "collision",
+	animation = require "animation",
 	player = require "player",
 	trees = require "trees"
 }
@@ -20,8 +21,10 @@ data.plugins = {
 data.items = {}
 
 function love.load()
-	callHook('plugins', 'load')
-	callHook('items', 'load')
+	callHook('plugins', 'initialise')
+	callHook('items', 'initialise')
+	callHook('plugins', 'loadGraphics')
+	callHook('items', 'loadGraphics')
 end
 
 function love.update(dt)

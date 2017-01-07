@@ -1,6 +1,6 @@
 local trees = {}
 
-function trees.load(data)
+function trees.initialise(data)
 	local tree1Sprite = love.graphics.newImage("images/tree1.png")
 
 	-- Plant a forest

@@ -5,7 +5,7 @@ local viewport = {
 	height = 0
 }
 
-function viewport.load(data)
+function viewport.initialise(data)
 	viewport.x = 0
 	viewport.y = 0
 	viewport.width = data.screenWidth
@@ -15,8 +15,10 @@ end
 
 function viewport.update(data)
 	local player = data.player
-	viewport.x = player.x - (viewport.width / 2) + player.width + player.drawXOffset
-	viewport.y = player.y - (viewport.height / 2) + player.height + player.drawYOffset
+	if player then
+		viewport.x = player.x - (viewport.width / 2) + player.width + player.drawXOffset
+		viewport.y = player.y - (viewport.height / 2) + player.height + player.drawYOffset
+	end
 	return data
 end
 

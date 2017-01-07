@@ -6,9 +6,11 @@ function renderer.draw(data)
 	end)
 
 	for _, item in ipairs(data.items) do
-		local drawX = item.x + item.drawXOffset
-		local drawY = item.y + item.drawYOffset
-		love.graphics.draw(item.sprite, drawX, drawY, 0, 1, 1, 0, 0)
+		if item.sprite then
+			local drawX = item.x + item.drawXOffset
+			local drawY = item.y + item.drawYOffset
+			love.graphics.draw(item.sprite, drawX, drawY, 0, 1, 1, 0, 0)
+		end
 
 		if data.drawWorldPosition then
 			love.graphics.setColor(255, 0, 0, 100)

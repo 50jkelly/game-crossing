@@ -1,9 +1,11 @@
-animation = require("animation")
-
-local player = {}
+local player = {
+	collisionState = "none"
+}
 
 local playerItem = {
 	id = "player",
+	animationPrefix = "player",
+	framesPerSecond = 8,
 	canMove = true,
 	speed = 100,
 	direction = "none",
@@ -18,10 +20,7 @@ local playerItem = {
 	drawYOffset = -16
 }
 
-function player.load(data)
-	animation.load("player")
-	animation.setInitialState(playerItem.state)
-	player.collisionState = "none"
+function player.initialise(data)
 	data.player = playerItem
 	table.insert(data.items, playerItem)
 	return data
@@ -43,7 +42,6 @@ end
 function playerItem.update(data)
 	playerItem.oldX = playerItem.x
 	playerItem.oldY = playerItem.y
-	print(player.collisionState)
 
 	if player.moved then
 		local moveDistance = playerItem.speed * data.dt
@@ -78,15 +76,13 @@ function playerItem.update(data)
 	end
 
 	if player.moved and player.collisionState ~= playerItem.state then
-		animation.cycleFrames(data.dt, playerItem.state)
+		playerItem.cycleAnimation = true
 	end
 
 	if player.collisionState == playerItem.state then
-		animation.reset()
+		playerItem.resetAnimation = true
 	end
 
-
-	playerItem.sprite = animation.getCurrentSprite()
 	player.moved = false
 	player.colliding = false
 	return data
