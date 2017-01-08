@@ -14,6 +14,7 @@ data.plugins = {
 	collision = require "collision",
 	animation = require "animation",
 	player = require "player",
+	triggers = require "triggers",
 	messageBox = require "messageBox",
 	trees = require "trees"
 }
@@ -50,4 +51,11 @@ function callHook(collection, method)
 			value[method]()
 		end
 	end
+end
+
+function overlapping(rect1, rect2)
+	return not (rect1.x + rect1.width < rect2.x
+		or rect2.x + rect2.width < rect1.x
+		or rect1.y + rect1.height < rect2.y
+		or rect2.y + rect2.height < rect1.y)
 end

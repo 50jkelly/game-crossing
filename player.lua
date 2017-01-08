@@ -38,7 +38,9 @@ end
 function player.keyPressed()
 	local key = data.plugins.controls.currentKeyPressed
 	if key == "use" then
-		showMessageBox()
+		if playerItem.inMyTriggerZone then
+			showMessageBox()
+		end
 	end
 end
 
