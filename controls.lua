@@ -5,7 +5,18 @@ controls.keys = {
 	down = "s",
 	left= "a",
 	right = "d",
-	use = 'e'
+	use = 'e',
+	openInventory = 'i',
+	inventorySlot1 = '1',
+	inventorySlot2 = '2',
+	inventorySlot3 = '3',
+	inventorySlot4 = '4',
+	inventorySlot5 = '5',
+	inventorySlot6 = '6',
+	inventorySlot7 = '7',
+	inventorySlot8 = '8',
+	inventorySlot9 = '9',
+	inventorySlot10 = '0',
 }
 
 function controls.update()

@@ -1,20 +1,19 @@
 local collision = {}
 
 function collision.initialise()
-	for _, item in ipairs(data.items) do
-		item.collidingWith = {}
+	for _, entity in ipairs(data.dynamicEntities) do
+		entity.collidingWith = {}
 	end
 end
 
 function collision.update()
 	-- Iterate over all items that can move and check if they are colliding with anything
-	for _, item in ipairs(data.items) do
-		if item.canMove then
-			for _, otherItem in ipairs(data.items) do
-				if item.id ~= otherItem.id then
-					if overlapping(item, otherItem) then
-						item.collision(otherItem)
-					end
+	for _, entity in ipairs(data.dynamicEntities) do
+		local entities = concat(data.staticEntities, data.dynamicEntities)
+		for _, otherEntity in ipairs(entities) do
+			if entity.id ~= otherEntity.id then
+				if overlapping(entity, otherEntity) then
+					entity.collision(otherEntity)
 				end
 			end
 		end

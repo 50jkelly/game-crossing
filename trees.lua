@@ -4,9 +4,9 @@ local treeCount = 0
 function trees.initialise()
 	local tree1Sprite = love.graphics.newImage("images/tree1.png")
 
-	table.insert(data.items, newTree(0, 0, tree1Sprite))
-	table.insert(data.items, newTree(0, 30, tree1Sprite))
-	table.insert(data.items, newTree(30, 0, tree1Sprite))
+	table.insert(data.staticEntities, newTree(0, 0, tree1Sprite))
+	table.insert(data.staticEntities, newTree(0, 30, tree1Sprite))
+	table.insert(data.staticEntities, newTree(30, 0, tree1Sprite))
 end
 
 function newTree(x, y, sprite)

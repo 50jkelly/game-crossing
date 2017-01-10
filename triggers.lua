@@ -9,12 +9,22 @@ function triggers.initialise()
 
 	newTrigger(200, 200, 50, 50, function(trigger)
 		triggers.messageBoxes = {}
+		
+		local text = 'The player is not holding anything.'
+		local inventory = data.plugins.inventory
+		if inventory then
+			local slot = inventory.quickSlots[inventory.activatedSlot]
+			if slot.item then
+				text = 'The player is holding a '..slot.item.name..'.'
+			end
+		end
+
 		table.insert(triggers.messageBoxes, {
 			x = 10,
 			y = 10,
 			width = 200,
 			height = 50,
-			text = "Trigger fired"
+			text = text
 		})
 	end,
 	function(trigger)
@@ -23,14 +33,12 @@ function triggers.initialise()
 end
 
 function triggers.update()
-	for _, item in ipairs(data.items) do
-		if item.canMove then
+	for _, entity in ipairs(data.dynamicEntities) do
 		for _, trigger in ipairs(data.triggers) do
-				if overlapping(item, trigger) and trigger.firing == false then
-					trigger.firing = true
-					trigger.item = item
-					trigger.onFire(trigger)
-				end
+			if overlapping(entity, trigger) and trigger.firing == false then
+				trigger.firing = true
+				trigger.entity = entity
+				trigger.onFire(trigger)
 			end
 		end
 	end
@@ -39,10 +47,8 @@ function triggers.update()
 	for _, trigger in ipairs(data.triggers) do
 		if trigger.firing then
 			local anyOverlapping = false
-			for _, item in ipairs(data.items) do
-				if item.canMove then
-					anyOverlapping = anyOverlapping or overlapping(item, trigger)
-				end
+			for _, entity in ipairs(data.dynamicEntities) do
+				anyOverlapping = anyOverlapping or overlapping(entity, trigger)
 			end
 			if anyOverlapping == false then
 				trigger.firing = false

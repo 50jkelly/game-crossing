@@ -7,55 +7,57 @@ local animation = {}
 -- and loading them into a table. The frames' filenames are used to determine
 -- what state they belong to and what order they appear in the animation.
 function animation.loadGraphics()
-	for _, item in ipairs(data.items) do
-		if item.animationPrefix ~= nil then
-			item.frames = {}
-			item.timeSinceLastFrame = 0
-			item.frameCounter = 1
-			item.resetAnimation = true
-			item.cycleAnimation = false
-			local files = getFiles(item.animationPrefix)
+	local entities = concat(data.staticEntities, data.dynamicEntities)
+	for _, entity in ipairs(entities) do
+		if entity.animationPrefix ~= nil then
+			entity.frames = {}
+			entity.timeSinceLastFrame = 0
+			entity.frameCounter = 1
+			entity.resetAnimation = true
+			entity.cycleAnimation = false
+			local files = getFiles(entity.animationPrefix)
 			for _, file in ipairs(files) do
-				local state = getState(file, item.animationPrefix)
-				item.frames = addState(item.frames, state)
-				item.frames = addFrame(item.frames, state, file)
+				local state = getState(file, entity.animationPrefix)
+				entity.frames = addState(entity.frames, state)
+				entity.frames = addFrame(entity.frames, state, file)
 			end
 		end
 	end
 end
 
 function animation.update()
-	for _, item in ipairs(data.items) do
-		if item.resetAnimation then
-			reset(item)
-		elseif item.cycleAnimation then
-			cycleFrames(item, data)
+	local entities = concat(data.staticEntities, data.dynamicEntities)
+	for _, entity in ipairs(entities) do
+		if entity.resetAnimation then
+			reset(entity)
+		elseif entity.cycleAnimation then
+			cycleFrames(entity, data)
 		end
-		item.resetAnimation = false
-		item.cycleAnimation = false
+		entity.resetAnimation = false
+		entity.cycleAnimation = false
 	end
 end
 
-function reset(item)
-	item.frameCounter = 1
-	item.sprite = item.frames[item.state][item.frameCounter]
+function reset(entity)
+	entity.frameCounter = 1
+	entity.sprite = entity.frames[entity.state][entity.frameCounter]
 end
 
-function cycleFrames(item)
+function cycleFrames(entity)
 	-- Maintain time since last player animation update
-	item.timeSinceLastFrame = item.timeSinceLastFrame + data.dt
+	entity.timeSinceLastFrame = entity.timeSinceLastFrame + data.dt
 
 	-- Cycle the frames
-	if item.timeSinceLastFrame > 1 / item.framesPerSecond then
-		item.timeSinceLastFrame = 0
-		item.frameCounter = item.frameCounter + 1
-		if item.frameCounter > table.getn(item.frames[item.state]) then
-			item.frameCounter = 1
+	if entity.timeSinceLastFrame > 1 / entity.framesPerSecond then
+		entity.timeSinceLastFrame = 0
+		entity.frameCounter = entity.frameCounter + 1
+		if entity.frameCounter > table.getn(entity.frames[entity.state]) then
+			entity.frameCounter = 1
 		end
 	end
 
 	-- Set the current sprite
-	item.sprite = item.frames[item.state][item.frameCounter]
+	entity.sprite = entity.frames[entity.state][entity.frameCounter]
 end
 
 -- Private functions

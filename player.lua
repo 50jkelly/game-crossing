@@ -1,11 +1,9 @@
 local player = {}
 
-
-local playerItem = {
+local playerEntity = {
 	id = "player",
 	animationPrefix = "player",
 	framesPerSecond = 8,
-	canMove = true,
 	blockedStates = {},
 	speed = 100,
 	direction = "none",
@@ -22,102 +20,83 @@ local playerItem = {
 
 function player.initialise()
 	player.messageBoxes = {}
-	data.player = playerItem
-	table.insert(data.items, playerItem)
+	data.player = playerEntity
+	table.insert(data.dynamicEntities, playerEntity)
 end
 
 function player.keyDown()
 	local key = data.plugins.controls.currentKeyDown
 
-	if key == "up" or key =="down" or key == "left" or key == "right" then
-		playerItem.state = "walk_"..key
-		player.moved = true
-	end
-end
-
-function player.keyPressed()
-	local key = data.plugins.controls.currentKeyPressed
-	if key == "use" then
-		if playerItem.inMyTriggerZone then
-			showMessageBox()
+	if data.state == 'game' then
+		if key == "up" or key =="down" or key == "left" or key == "right" then
+			playerEntity.state = "walk_"..key
+			player.moved = true
 		end
 	end
 end
 
-function showMessageBox()
-	if table.getn(player.messageBoxes) == 0 then
-		table.insert(player.messageBoxes, {
-			x = 50,
-			y = 425,
-			width = 100,
-			height = 150,
-			text = "Hello! This should span multiple lines."
-		})
-	else
-		table.remove(player.messageBoxes)
+function playerEntity.update()
+	if data.state == 'game' then
+		playerEntity.oldX = playerEntity.x
+		playerEntity.oldY = playerEntity.y
+
+		if player.moved then
+			local moveDistance = playerEntity.speed * data.dt
+			if playerEntity.state == "walk_up" then
+				if not isBlockedState(playerEntity.state) then
+					playerEntity.blockedStates = {}
+					playerEntity.y = playerEntity.y - moveDistance
+				else
+					player.colliding = true
+				end
+			end
+			if playerEntity.state == "walk_down" then
+				if not isBlockedState(playerEntity.state) then
+					playerEntity.blockedStates = {}
+					playerEntity.y = playerEntity.y + moveDistance
+				else
+					player.colliding = true
+				end
+			end
+			if playerEntity.state == "walk_left" then
+				if not isBlockedState(playerEntity.state) then
+					playerEntity.blockedStates = {}
+					playerEntity.x = playerEntity.x - moveDistance
+				else
+					player.colliding = true
+				end
+			end
+			if playerEntity.state == "walk_right" then
+				if not isBlockedState(playerEntity.state) then
+					playerEntity.blockedStates = {}
+					playerEntity.x = playerEntity.x + moveDistance
+				else
+					player.colliding = true
+				end
+			end
+		end
+
+		if player.moved and player.colliding == false then
+			playerEntity.cycleAnimation = true
+		end
+
+		if player.colliding then
+			playerEntity.resetAnimation = true
+		end
+
+		player.moved = false
+		player.colliding = false
 	end
 end
 
-function playerItem.update()
-	playerItem.oldX = playerItem.x
-	playerItem.oldY = playerItem.y
-
-	if player.moved then
-		local moveDistance = playerItem.speed * data.dt
-		if playerItem.state == "walk_up" then
-			if not isBlockedState(playerItem.state) then
-				playerItem.blockedStates = {}
-				playerItem.y = playerItem.y - moveDistance
-			else
-				player.colliding = true
-			end
-		end
-		if playerItem.state == "walk_down" then
-			if not isBlockedState(playerItem.state) then
-				playerItem.blockedStates = {}
-				playerItem.y = playerItem.y + moveDistance
-			else
-				player.colliding = true
-			end
-		end
-		if playerItem.state == "walk_left" then
-			if not isBlockedState(playerItem.state) then
-				playerItem.blockedStates = {}
-				playerItem.x = playerItem.x - moveDistance
-			else
-				player.colliding = true
-			end
-		end
-		if playerItem.state == "walk_right" then
-			if not isBlockedState(playerItem.state) then
-				playerItem.blockedStates = {}
-				playerItem.x = playerItem.x + moveDistance
-			else
-				player.colliding = true
-			end
-		end
-	end
-
-	if player.moved and player.colliding == false then
-		playerItem.cycleAnimation = true
-	end
-
-	if player.colliding then
-		playerItem.resetAnimation = true
-	end
-
-	player.moved = false
-	player.colliding = false
-end
-
-function playerItem.collision(otherItem)
-	table.insert(playerItem.blockedStates, playerItem.state)
-	playerItem.x = playerItem.oldX
-	playerItem.y = playerItem.oldY
+function playerEntity.collision(otherItem)
+	table.insert(playerEntity.blockedStates, playerEntity.state)
+	playerEntity.x = playerEntity.oldX
+	playerEntity.y = playerEntity.oldY
 end
 
 function isBlockedState(state)
-	for _, blockedState in ipairs(playerItem.blockedStates) do
+	for _, blockedState in ipairs(playerEntity.blockedStates) do
 		if state == blockedState then
 			return true
 		end

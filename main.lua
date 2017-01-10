@@ -2,8 +2,9 @@
 data = {
 	screenWidth = 800,
 	screenHeight = 600,
-	items = {},
-	drawWorldPosition = true
+	staticEntities = {},
+	dynamicEntities = {},
+	state = 'game'
 }
 
 -- Plugins
@@ -16,23 +17,25 @@ data.plugins = {
 	player = require "player",
 	triggers = require "triggers",
 	messageBox = require "messageBox",
+	inventory = require "inventory",
+	items = require "items",
 	trees = require "trees"
 }
 
--- Items
-data.items = {}
-
 function love.load()
 	callHook('plugins', 'initialise')
-	callHook('items', 'initialise')
+	callHook('staticEntities', 'initialise')
+	callHook('dynamicEntities', 'initialise')
 	callHook('plugins', 'loadGraphics')
-	callHook('items', 'loadGraphics')
+	callHook('staticEntities', 'loadGraphics')
+	callHook('dynamicEntities', 'loadGraphics')
 end
 
 function love.update(dt)
 	data.dt = dt
 	callHook('plugins', 'update')
-	callHook('items', 'update')
+	callHook('staticEntities', 'update')
+	callHook('dynamicEntities', 'update')
 end
 
 function love.draw()
@@ -58,4 +61,15 @@ function overlapping(rect1, rect2)
 		or rect2.x + rect2.width < rect1.x
 		or rect1.y + rect1.height < rect2.y
 		or rect2.y + rect2.height < rect1.y)
+end
+
+function concat(table1, table2)
+	local t = {}
+	for _, item in ipairs(table1) do
+		table.insert(t, item)
+	end
+	for _, item in ipairs(table2) do
+		table.insert(t, item)
+	end
+	return t
 end
