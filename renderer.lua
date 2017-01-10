@@ -67,6 +67,8 @@ function renderer.drawUI()
 		local startX = x
 
 		for index, quickSlot in ipairs(inventory.quickSlots) do
+			-- Draw the main panel
+
 			local slotColor = inventory.slotColor
 			local borderColor = inventory.borderColor
 
@@ -77,11 +79,24 @@ function renderer.drawUI()
 
 			drawPanel(x, y, width, height, slotColor, borderColor)
 
+			-- Draw the sprite and quantity of the item in the quickslot
+
 			if quickSlot and inventory.slots[quickSlot] then
-				local item = inventory.getItem(inventory.slots[quickSlot])
+				local item, quantity = inventory.getItem(quickSlot)
 				love.graphics.draw(item.sprite, x, y)
+
+				local rightMargin = 12
+				if quantity > 9 then
+					rightMargin = 20
+				end
+				if quantity > 99 then
+					rightMargin = 24
+				end
+				love.graphics.print(quantity, x + width - rightMargin, y + 4)
 			end
 
+			-- Draw the shortcut key for the quickslot
+			
 			if controls and inventory.quickSlotKeys[index] then
 				local key = controls.keys[inventory.quickSlotKeys[index]]
 				love.graphics.print(key, x + 4, y + height - 16)
@@ -113,7 +128,7 @@ function renderer.drawUI()
 			local startY = y
 
 			for index, slot in ipairs(inventory.slots) do
-				local item = inventory.getItem(slot)
+				local item, quantity = inventory.getItem(index)
 
 				if item then
 					-- Draw the cursor
@@ -139,13 +154,16 @@ function renderer.drawUI()
 							end
 						end
 					end
-
 					
 					-- Print the item's name
 					x = x + 30
 					if item.name then
 						love.graphics.print(item.name, x, y)
 					end
+
+					-- Print the item's quantity
+					x = x + 80
+					love.graphics.print(quantity, x, y)
 
 					-- Draw the item's sprite if it is highlighted
 					x = panelX + (panelWidth - margin - 50)

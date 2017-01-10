@@ -10,8 +10,8 @@ function items.loadGraphics()
 
 	local inventory = data.plugins.inventory
 	if inventory then
-		inventory.addItem(items.itemLookup['item_seed'])
-		inventory.addItem(items.itemLookup['item_book'])
+		inventory.addItem(items.itemLookup['item_seed'], 110)
+		inventory.addItem(items.itemLookup['item_book'], 3)
 		inventory.highlightedSlot = 1
 	end
 end

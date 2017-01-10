@@ -9,6 +9,7 @@ function inventory.initialise()
 	inventory.numberOfQuickSlots = 5
 
 	inventory.slots = {}
+	inventory.slotQuantities = {}
 
 	inventory.quickSlots = {}
 	for i=1, inventory.numberOfQuickSlots, 1 do
@@ -45,6 +46,9 @@ function inventory.saveGame()
 
 	file = saveLoad.saveFilePath .. 'inventorySlots.txt'
 	saveLoad.writeTable(inventory.slots, file)
+
+	file = saveLoad.saveFilePath .. 'inventorySlotQuantities.txt'
+	saveLoad.writeTable(inventory.slotQuantities, file)
 end
 
 function inventory.loadGame()
@@ -57,6 +61,9 @@ function inventory.loadGame()
 
 	file = saveLoad.saveFilePath .. 'inventorySlots.txt'
 	inventory.slots = saveLoad.readArray(inventory.slots, file)
+
+	file = saveLoad.saveFilePath .. 'inventorySlotQuantities.txt'
+	inventory.slotQuantities = saveLoad.readArray(inventory.slotQuantities, file)
 end
 
 function inventory.keyPressed()
@@ -74,12 +81,16 @@ function inventory.keyPressed()
 	end
 
 	if data.state == 'inventory' then
-		if key == 'up' and inventory.highlightedSlot > 1 then
-			inventory.highlightedSlot = inventory.highlightedSlot - 1
+		if key == 'up' and inventory.highlightedSlot then
+			if inventory.highlightedSlot > 1 then
+				inventory.highlightedSlot = inventory.highlightedSlot - 1
+			end
 		end
 
-		if key == 'down' and inventory.highlightedSlot < table.getn(inventory.slots) then
-			inventory.highlightedSlot = inventory.highlightedSlot + 1
+		if key == 'down' and inventory.highlightedSlot then 
+			if inventory.highlightedSlot < table.getn(inventory.slots) then
+				inventory.highlightedSlot = inventory.highlightedSlot + 1
+			end
 		end
 
 		if isQuickSlot then
@@ -103,21 +114,24 @@ function inventory.keyPressed()
 	end
 end
 
-function inventory.addItem(item)
+function inventory.addItem(item, quantity)
 	table.insert(inventory.slots, item.id)
+	table.insert(inventory.slotQuantities, quantity)
 end
 
-function inventory.getItem(slot)
+function inventory.getItem(slotIndex)
+	local slotValue = inventory.slots[slotIndex]
+	local quantity = inventory.slotQuantities[slotIndex]
 	local item = nil
 	local items = data.plugins.items
 	if items then
 		for itemId, value in pairs(items.itemLookup) do
-			if itemId == slot then
+			if itemId == slotValue then
 				item = value
 			end
 		end
 	end
-	return item
+	return item, quantity
 end
 
 return inventory
