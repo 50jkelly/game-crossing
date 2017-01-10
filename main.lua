@@ -9,6 +9,7 @@ data = {
 
 -- Plugins
 data.plugins = {
+	saveLoad = require 'saveLoad',
 	viewport = require "viewport",
 	renderer = require "renderer",
 	controls = require "controls",

@@ -17,6 +17,8 @@ controls.keys = {
 	inventorySlot8 = '8',
 	inventorySlot9 = '9',
 	inventorySlot10 = '0',
+	saveGame = 'z',
+	loadGame = 'l'
 }
 
 function controls.update()

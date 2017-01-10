@@ -1,0 +1,3 @@
+activatedSlot, 2
+highlightedSlot, 1
+numberOfQuickSlots, 5

@@ -55,6 +55,7 @@ function renderer.drawUI()
 	-- Draw inventory quick slots
 	
 	local inventory = data.plugins.inventory
+	local controls = data.plugins.controls
 	if inventory then
 		local totalQuickSlots = inventory.numberOfQuickSlots
 		local margin = 10
@@ -74,18 +75,16 @@ function renderer.drawUI()
 				borderColor = inventory.activatedBorderColor
 			end
 
-			if index == inventory.selectedSlot then
-				borderColor = inventory.selectedBorderColor
-			end
-
 			drawPanel(x, y, width, height, slotColor, borderColor)
 
-			if quickSlot.item and quickSlot.item.sprite then
-				love.graphics.draw(quickSlot.item.sprite, x, y)
+			if quickSlot and inventory.slots[quickSlot] then
+				local item = inventory.getItem(inventory.slots[quickSlot])
+				love.graphics.draw(item.sprite, x, y)
 			end
 
-			if quickSlot.key then
-				love.graphics.print(quickSlot.key, x + 4, y + height - 16)
+			if controls and inventory.quickSlotKeys[index] then
+				local key = controls.keys[inventory.quickSlotKeys[index]]
+				love.graphics.print(key, x + 4, y + height - 16)
 			end
 
 			x = x + width + 10
@@ -114,21 +113,33 @@ function renderer.drawUI()
 			local startY = y
 
 			for index, slot in ipairs(inventory.slots) do
-				local item = slot.item
+				local item = inventory.getItem(slot)
+
 				if item then
 					-- Draw the cursor
 					if inventory.highlightedSlot == index then
 						love.graphics.draw(inventory.cursor, x, y)
 					end
 
-					-- Print the item's quickslot location
+					-- Print the item's quickslot shortcut
 					x = x + 50
 					y = y + textYMargin
-					for _, quickSlot in ipairs(inventory.quickSlots) do
-						if quickSlot.item and quickSlot.item.id == item.id then
-							love.graphics.print(quickSlot.key, x, y)
+					if controls then
+						local quickSlotIndex = nil
+						for qsIndex, qsValue in ipairs(inventory.quickSlots) do
+							if qsValue == index then
+								quickSlotIndex = qsIndex
+							end
+						end
+						if quickSlotIndex then
+							local quickSlotKeyIndex = inventory.quickSlotKeys[quickSlotIndex]
+							local quickSlotKey = controls.keys[quickSlotKeyIndex]
+							if quickSlotKey then
+								love.graphics.print(quickSlotKey, x, y)
+							end
 						end
 					end
+
 					
 					-- Print the item's name
 					x = x + 30

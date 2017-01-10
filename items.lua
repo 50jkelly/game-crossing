@@ -1,17 +1,17 @@
 local items = {}
 
 function items.initialise()
-	data.items = {}
+	items.itemLookup = {}
 end
 
 function items.loadGraphics()
-	local seed = newItem('item_seed', 'Seed', 'images/item_seed.png')
-	local book = newItem('item_book', 'Book', 'images/item_book.png')
+	items.itemLookup['item_seed'] = newItem('item_seed', 'Seed', 'images/item_seed.png')
+	items.itemLookup['item_book'] = newItem('item_book', 'Book', 'images/item_book.png')
 
 	local inventory = data.plugins.inventory
 	if inventory then
-		inventory.addItem(seed)
-		inventory.addItem(book)
+		inventory.addItem(items.itemLookup['item_seed'])
+		inventory.addItem(items.itemLookup['item_book'])
 		inventory.highlightedSlot = 1
 	end
 end

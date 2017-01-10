@@ -6,23 +6,26 @@ function inventory.initialise()
 	inventory.activatedSlotColor = {100, 100, 100, 100}
 	inventory.activatedBorderColor = {50, 50, 50, 255}
 	inventory.selectedBorderColor = {255, 210, 50, 255}
-	inventory.cursorPosition = 0
 	inventory.numberOfQuickSlots = 5
 
 	inventory.slots = {}
 
 	inventory.quickSlots = {}
 	for i=1, inventory.numberOfQuickSlots, 1 do
-		table.insert(inventory.quickSlots, {})
+		table.insert(inventory.quickSlots, 0)
 	end
 
-	activateSlot(1)
+	inventory.activatedSlot = 1
 
 	local controls = data.plugins.controls
 	if controls then
+		inventory.quickSlotKeys = {}
+		for _, _ in ipairs(inventory.quickSlots) do
+			table.insert(inventory.quickSlotKeys, nil)
+		end
 		for index, _ in ipairs(inventory.quickSlots) do
 			if controls.keys['inventorySlot'..index] then
-				inventory.quickSlots[index].key = controls.keys['inventorySlot'..index]
+				inventory.quickSlotKeys[index] = 'inventorySlot'..index
 			end
 		end
 	end
@@ -32,19 +35,40 @@ function inventory.loadGraphics()
 	inventory.cursor = love.graphics.newImage('images/cursor.png')
 end
 
+function inventory.saveGame()
+	local saveLoad = data.plugins.saveLoad
+	local file = saveLoad.saveFilePath .. 'inventory.txt'
+	saveLoad.writeTable(inventory, file)
+
+	file = saveLoad.saveFilePath .. 'quickSlots.txt'
+	saveLoad.writeTable(inventory.quickSlots, file)
+
+	file = saveLoad.saveFilePath .. 'inventorySlots.txt'
+	saveLoad.writeTable(inventory.slots, file)
+end
+
+function inventory.loadGame()
+	local saveLoad = data.plugins.saveLoad
+	local file = saveLoad.saveFilePath .. 'inventory.txt'
+	inventory = saveLoad.readTable(inventory, file)
+
+	file = saveLoad.saveFilePath .. 'quickSlots.txt'
+	inventory.quickSlots = saveLoad.readArray(inventory.quickSlots, file)
+
+	file = saveLoad.saveFilePath .. 'inventorySlots.txt'
+	inventory.slots = saveLoad.readArray(inventory.slots, file)
+end
+
 function inventory.keyPressed()
 	local key = data.plugins.controls.currentKeyPressed
-	local quickSlot = string.match(key, 'inventorySlot(%d+)')
-	quickSlot = tonumber(quickSlot)
+	local isQuickSlot = string.match(key, 'inventorySlot(%d+)')
 
 	if data.state == 'game' then
-		if quickSlot then
-			for _, s in ipairs(inventory.quickSlots) do
-				s.activated = false
-			end
-
-			if inventory.quickSlots[quickSlot] then
-				activateSlot(quickSlot)
+		if isQuickSlot then
+			for index, qsKey in ipairs(inventory.quickSlotKeys) do
+				if key == qsKey then
+					inventory.activatedSlot = index
+				end
 			end
 		end
 	end
@@ -53,21 +77,19 @@ function inventory.keyPressed()
 		if key == 'up' and inventory.highlightedSlot > 1 then
 			inventory.highlightedSlot = inventory.highlightedSlot - 1
 		end
+
 		if key == 'down' and inventory.highlightedSlot < table.getn(inventory.slots) then
 			inventory.highlightedSlot = inventory.highlightedSlot + 1
 		end
-		if quickSlot then
-			for index, slot in ipairs(inventory.slots) do
-				if index == inventory.highlightedSlot then
-					for _, qs in ipairs(inventory.quickSlots) do
-						if qs.item == slot.item then
-							qs.item = nil
-						end
-					end
-					if inventory.quickSlots[quickSlot] then
-						inventory.quickSlots[quickSlot].item = slot.item
-					end
+
+		if isQuickSlot then
+			for i, v in ipairs(inventory.quickSlots) do
+				if v == inventory.highlightedSlot then
+					inventory.quickSlots[i] = 0
 				end
+			end
+			if tonumber(isQuickSlot) <= inventory.numberOfQuickSlots then
+				inventory.quickSlots[tonumber(isQuickSlot)] = inventory.highlightedSlot
 			end
 		end
 	end
@@ -82,13 +104,20 @@ function inventory.keyPressed()
 end
 
 function inventory.addItem(item)
-	table.insert(inventory.slots, {
-		item = item
-	})
+	table.insert(inventory.slots, item.id)
 end
 
-function activateSlot(slot)
-	inventory.activatedSlot = slot
+function inventory.getItem(slot)
+	local item = nil
+	local items = data.plugins.items
+	if items then
+		for itemId, value in pairs(items.itemLookup) do
+			if itemId == slot then
+				item = value
+			end
+		end
+	end
+	return item
 end
 
 return inventory

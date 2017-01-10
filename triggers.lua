@@ -13,9 +13,11 @@ function triggers.initialise()
 		local text = 'The player is not holding anything.'
 		local inventory = data.plugins.inventory
 		if inventory then
-			local slot = inventory.quickSlots[inventory.activatedSlot]
-			if slot.item then
-				text = 'The player is holding a '..slot.item.name..'.'
+			local quickSlot = inventory.quickSlots[inventory.activatedSlot]
+			local slot = inventory.slots[quickSlot]
+			local item = inventory.getItem(slot)
+			if item then
+				text = 'The player is holding a '..item.name..'.'
 			end
 		end
 
