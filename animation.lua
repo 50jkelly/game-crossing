@@ -1,27 +1,40 @@
 local animation = {}
 
--- Animations for an entity are broken down into states, and each state is
--- made up of a number of frames.
-
--- We load the animations of an entity by finding all of its frames on disk
--- and loading them into a table. The frames' filenames are used to determine
--- what state they belong to and what order they appear in the animation.
-function animation.loadGraphics()
-	local entities = concat(data.staticEntities, data.dynamicEntities)
-	for _, entity in ipairs(entities) do
-		if entity.animationPrefix ~= nil then
-			entity.frames = {}
-			entity.timeSinceLastFrame = 0
-			entity.frameCounter = 1
-			entity.resetAnimation = true
-			entity.cycleAnimation = false
-			local files = getFiles(entity.animationPrefix)
-			for _, file in ipairs(files) do
-				local state = getState(file, entity.animationPrefix)
-				entity.frames = addState(entity.frames, state)
-				entity.frames = addFrame(entity.frames, state, file)
-			end
-		end
+function animation.assetsLoaded()
+	local player = data.player
+	if player then
+		player.walk_down_1_sprite = 'player_walk_down_1'
+		player.walk_down_2_sprite = 'player_walk_down_2'
+		player.walk_down_3_sprite = 'player_walk_down_3'
+		player.walk_down_4_sprite = 'player_walk_down_4'
+		player.walk_down_5_sprite = 'player_walk_down_5'
+		player.walk_down_6_sprite = 'player_walk_down_6'
+		player.walk_down_7_sprite = 'player_walk_down_7'
+		player.walk_down_8_sprite = 'player_walk_down_8'
+		player.walk_left_1_sprite = 'player_walk_left_1'
+		player.walk_left_2_sprite = 'player_walk_left_2'
+		player.walk_left_3_sprite = 'player_walk_left_3'
+		player.walk_left_4_sprite = 'player_walk_left_4'
+		player.walk_left_5_sprite = 'player_walk_left_5'
+		player.walk_left_6_sprite = 'player_walk_left_6'
+		player.walk_left_7_sprite = 'player_walk_left_7'
+		player.walk_left_8_sprite = 'player_walk_left_8'
+		player.walk_right_1_sprite = 'player_walk_right_1'
+		player.walk_right_2_sprite = 'player_walk_right_2'
+		player.walk_right_3_sprite = 'player_walk_right_3'
+		player.walk_right_4_sprite = 'player_walk_right_4'
+		player.walk_right_5_sprite = 'player_walk_right_5'
+		player.walk_right_6_sprite = 'player_walk_right_6'
+		player.walk_right_7_sprite = 'player_walk_right_7'
+		player.walk_right_8_sprite = 'player_walk_right_8'
+		player.walk_up_1_sprite = 'player_walk_up_1'
+		player.walk_up_2_sprite = 'player_walk_up_2'
+		player.walk_up_3_sprite = 'player_walk_up_3'
+		player.walk_up_4_sprite = 'player_walk_up_4'
+		player.walk_up_5_sprite = 'player_walk_up_5'
+		player.walk_up_6_sprite = 'player_walk_up_6'
+		player.walk_up_7_sprite = 'player_walk_up_7'
+		player.walk_up_8_sprite = 'player_walk_up_8'
 	end
 end
 
@@ -39,51 +52,34 @@ function animation.update()
 end
 
 function reset(entity)
-	entity.frameCounter = 1
-	entity.sprite = entity.frames[entity.state][entity.frameCounter]
+	if entity.id == 'player' then
+		local player = data.player
+		if entity.state == 'walk_up' then entity.spriteId = player.walk_up_1_sprite
+		elseif entity.state == 'walk_down' then entity.spriteId = player.walk_down_1_sprite
+		elseif entity.state == 'walk_left' then entity.spriteId = player.walk_left_1_sprite
+		elseif entity.state == 'walk_right' then entity.spriteId = player.walk_right_1_sprite
+		else entity.spriteId = player.walk_down_1.sprite end
+	end
 end
 
 function cycleFrames(entity)
-	-- Maintain time since last player animation update
-	entity.timeSinceLastFrame = entity.timeSinceLastFrame + data.dt
+	if entity.id == 'player' then
+		-- Maintain time since last player animation update
+		entity.timeSinceLastFrame = entity.timeSinceLastFrame + data.dt
 
-	-- Cycle the frames
-	if entity.timeSinceLastFrame > 1 / entity.framesPerSecond then
-		entity.timeSinceLastFrame = 0
-		entity.frameCounter = entity.frameCounter + 1
-		if entity.frameCounter > table.getn(entity.frames[entity.state]) then
-			entity.frameCounter = 1
+		-- Cycle the frames
+		if entity.timeSinceLastFrame > 1 / entity.framesPerSecond then
+			entity.timeSinceLastFrame = 0
+			entity.frameCounter = entity.frameCounter + 1
+			if entity.frameCounter > 8 then
+				entity.frameCounter = 1
+			end
 		end
+
+		-- Set the current sprite
+		local spriteId = entity.state .. '_' .. entity.frameCounter .. '_sprite'
+		entity.spriteId = entity[spriteId]
 	end
-
-	-- Set the current sprite
-	entity.sprite = entity.frames[entity.state][entity.frameCounter]
-end
-
--- Private functions
-function getFiles(entityPrefix)
-  local files = {}
-  local p = io.popen('find images -type f | grep "'..entityPrefix..'"')
-  for file in p:lines() do
-    table.insert(files, file)
-  end
-  return files
-end
-
-function getState(file, entityPrefix)
-  return string.match(file, entityPrefix..'_(.+)_%d')
-end
-
-function addState(frames, state)
-  if frames[state] == nil then
-    frames[state] = {}
-  end
-  return frames
-end
-
-function addFrame(frames, state, file)
-  table.insert(frames[state], love.graphics.newImage(file))
-  return frames
 end
 
 return animation

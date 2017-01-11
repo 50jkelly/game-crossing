@@ -1,0 +1,3 @@
+trigger1, 25
+trigger2, 25
+trigger3, 25

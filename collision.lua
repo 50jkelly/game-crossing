@@ -9,9 +9,15 @@ end
 function collision.update()
 	-- Iterate over all items that can move and check if they are colliding with anything
 	for _, entity in ipairs(data.dynamicEntities) do
-		local entities = concat(data.staticEntities, data.dynamicEntities)
+		local entities = {}
+		local staticEntities = data.plugins.staticEntities
+		if staticEntities then
+			entities = concat(staticEntities.getTable(), data.dynamicEntities)
+		else
+			entities = data.dynamicEntities
+		end
 		for _, otherEntity in ipairs(entities) do
-			if entity.id ~= otherEntity.id then
+			if entity.id ~= otherEntity.id and otherEntity.collides then
 				if overlapping(entity, otherEntity) then
 					entity.collision(otherEntity)
 				end

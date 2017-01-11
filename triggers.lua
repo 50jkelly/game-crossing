@@ -1,79 +1,161 @@
 local triggers = {}
+local triggerX = {}
+local triggerY = {}
+local triggerWidth = {}
+local triggerHeight = {}
+local triggerOnFire = {}
+local triggerOnStop = {}
+local triggerIdle = {}
+local triggerFiring = {}
+local triggerFunctions = {}
+local triggerEntity = {}
+local count = 1
 
--- A trigger is an area of the ground that runs a script or calls a hook when triggered
--- When it calls a hook, it should add the entity that caused the trigger to fire
-
-function triggers.initialise()
-	triggers.count = 1
-	data.triggers = {}
-
-	newTrigger(200, 200, 50, 50, function(trigger)
-		triggers.messageBoxes = {}
-		
-		local text = 'The player is not holding anything.'
+function triggers.assetsLoaded()
+	triggerFunctions['item_pickup'] = function(triggerId)
 		local inventory = data.plugins.inventory
-		if inventory then
-			local quickSlot = inventory.quickSlots[inventory.activatedSlot]
-			local item, quantity = inventory.getItem(quickSlot)
-			if item then
-				text = 'The player is holding ' ..quantity .. ' ' ..item.name.. 's.'
-			end
-		end
+		local items = data.plugins.items
+		local actionBar = data.plugins.actionBar
+		local staticEntities = data.plugins.staticEntities
 
-		table.insert(triggers.messageBoxes, {
-			x = 10,
-			y = 10,
-			width = 200,
-			height = 50,
-			text = text
-		})
-	end,
-	function(trigger)
-		triggers.messageBoxes = {}
-	end)
+		if inventory and items and staticEntities then
+			local staticEntityId = triggerEntity[triggerId]
+			local itemId = staticEntities.getEntity(staticEntityId).itemId
+			local slot = inventory.findItem(itemId)
+			if slot then
+				inventory.slotQuantities[slot] = inventory.slotQuantities[slot] + 1
+			else
+				local newSlot = inventory.addItem(itemId, 1)
+				if actionBar then
+					local actionBarSlot = actionBar.getSlotIndex(newSlot)
+					if not actionBarSlot then
+						actionBarSlot = actionBar.nextEmptySlot()
+					end
+					if actionBarSlot then
+						actionBar.setSlotValue(actionBarSlot, newSlot)
+					end
+				end
+			end
+			staticEntities.remove(staticEntityId)
+			triggers.remove(triggerId)
+		end
+	end
+
+	callHook('plugins', 'triggersLoaded')
 end
 
 function triggers.update()
+	-- Fire triggers that are overlapping a dynamic entity
 	for _, entity in ipairs(data.dynamicEntities) do
-		for _, trigger in ipairs(data.triggers) do
-			if overlapping(entity, trigger) and trigger.firing == false then
-				trigger.firing = true
-				trigger.entity = entity
-				trigger.onFire(trigger)
+		for _, triggerId in ipairs(triggerIdle) do
+			if overlapping(entity, triggers.getRect(triggerId)) then
+				fire(triggerId)
 			end
 		end
 	end
 
-	-- Reset triggers that are not currently being triggered
-	for _, trigger in ipairs(data.triggers) do
-		if trigger.firing then
-			local anyOverlapping = false
-			for _, entity in ipairs(data.dynamicEntities) do
-				anyOverlapping = anyOverlapping or overlapping(entity, trigger)
-			end
-			if anyOverlapping == false then
-				trigger.firing = false
-				trigger.onStop(trigger)
-				trigger.item = nil
+	-- Stop firing triggers that have no entities currently firing them
+	local stopped = {}
+	for index, triggerId in ipairs(triggerFiring) do
+		for _, entity in ipairs(data.dynamicEntities) do
+			if overlapping(entity, triggers.getRect(triggerId)) then
+				stop(triggerId)
+				break
 			end
 		end
 	end
 end
 
--- Private functions
+function triggers.saveGame()
+	local saveLoad = data.plugins.saveLoad
+	saveLoad.writeTable(triggerX, saveLoad.saveFilePath..'triggerX.txt')
+	saveLoad.writeTable(triggerY, saveLoad.saveFilePath..'triggerY.txt')
+	saveLoad.writeTable(triggerWidth, saveLoad.saveFilePath..'triggerWidth.txt')
+	saveLoad.writeTable(triggerHeight, saveLoad.saveFilePath..'triggerHeight.txt')
+	saveLoad.writeTable(triggerOnFire, saveLoad.saveFilePath..'triggerOnFire.txt')
+	saveLoad.writeTable(triggerOnStop, saveLoad.saveFilePath..'triggerOnStop.txt')
+	saveLoad.writeTable(triggerIdle, saveLoad.saveFilePath..'triggerIdle.txt')
+	saveLoad.writeTable(triggerFiring, saveLoad.saveFilePath..'triggerFiring.txt')
+	saveLoad.writeTable(triggerEntity, saveLoad.saveFilePath..'triggerEntity.txt')
+end
 
-function newTrigger(x, y, width, height, onFire, onStop)
-	table.insert(data.triggers, {
-		id = 'trigger'..triggers.count,
-		x = x,
-		y = y,
-		width = width,
-		height = height,
-		onFire = onFire,
-		onStop = onStop,
-		firing = false
-	})
-	triggers.count = triggers.count + 1
+function triggers.loadGame()
+	local saveLoad = data.plugins.saveLoad
+	triggerX = saveLoad.readTable(triggerX, saveLoad.saveFilePath..'triggerX.txt')
+	triggerY = saveLoad.readTable(triggerY, saveLoad.saveFilePath..'triggerY.txt')
+	triggerWidth = saveLoad.readTable(triggerWidth, saveLoad.saveFilePath..'triggerWidth.txt')
+	triggerHeight = saveLoad.readTable(triggerHeight, saveLoad.saveFilePath..'triggerHeight.txt')
+	triggerOnFire = saveLoad.readTable(triggerOnFire, saveLoad.saveFilePath..'triggerOnFire.txt')
+	triggerOnStop = saveLoad.readTable(triggerOnStop, saveLoad.saveFilePath..'triggerOnStop.txt')
+	triggerIdle = saveLoad.readArray(triggerIdle, saveLoad.saveFilePath..'triggerIdle.txt')
+	triggerFiring = saveLoad.readArray(triggerFiring, saveLoad.saveFilePath..'triggerFiring.txt')
+	triggerEntity = saveLoad.readTable(triggerEntity, saveLoad.saveFilePath..'triggerEntity.txt')
+	count = table.getn(triggers.allTriggers()) + 1
+end
+
+function triggers.getRect(triggerId)
+	return {
+		x = triggerX[triggerId],
+		y = triggerY[triggerId],
+		width = triggerWidth[triggerId],
+		height = triggerHeight[triggerId]
+	}
+end
+
+function fire(triggerId)
+	removeFromArray(triggerIdle, triggerId)
+	table.insert(triggerFiring, triggerId)
+	run(triggerOnFire, triggerId)
+end
+
+function stop(triggerId)
+	removeFromArray(triggerFiring, triggerId)
+	table.insert(triggerIdle, triggerId)
+	run(triggerOnStop, triggerId)
+end
+
+function run(funcTable, triggerId)
+	local funcId = funcTable[triggerId]
+	if funcId then
+		triggerFunctions[funcId](triggerId)
+	end
+end
+
+function triggers.newTrigger(x, y, width, height, onFireId, onStopId, entityId)
+	local id = 'trigger'..count
+	count = count + 1
+	triggerX[id] = x
+	triggerY[id] = y
+	triggerWidth[id] = width
+	triggerHeight[id] = height
+	if onFireId then triggerOnFire[id] = onFireId end
+	if onStopId then triggerOnStop[id] = onStopId end
+	if entityId then triggerEntity[id] = entityId end
+	table.insert(triggerIdle, id)
+end
+
+function removeFromArray(array, triggerId)
+	for index, value in ipairs(array) do
+		if value == triggerId then
+			table.remove(array, index)
+			return
+		end
+	end
+end
+
+function triggers.remove(id)
+	removeFromArray(triggerX, id)
+	removeFromArray(triggerY, id)
+	removeFromArray(triggerWidth, id)
+	removeFromArray(triggerHeight, id)
+	removeFromArray(triggerOnFire, id)
+	removeFromArray(triggerOnStop, id)
+	removeFromArray(triggerIdle, id)
+	removeFromArray(triggerFiring, id)
+end
+
+function triggers.allTriggers()
+	return concat(triggerIdle, triggerFiring)
 end
 
 return triggers

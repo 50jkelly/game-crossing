@@ -11,14 +11,17 @@ data = {
 data.plugins = {
 	saveLoad = require 'saveLoad',
 	viewport = require "viewport",
+	sprites = require 'sprites',
 	renderer = require "renderer",
 	controls = require "controls",
 	collision = require "collision",
 	animation = require "animation",
+	staticEntities = require 'staticEntities',
 	player = require "player",
 	triggers = require "triggers",
 	messageBox = require "messageBox",
 	inventory = require "inventory",
+	actionBar = require 'actionBar',
 	items = require "items",
 	trees = require "trees"
 }
@@ -30,6 +33,7 @@ function love.load()
 	callHook('plugins', 'loadGraphics')
 	callHook('staticEntities', 'loadGraphics')
 	callHook('dynamicEntities', 'loadGraphics')
+	callHook('plugins', 'assetsLoaded')
 end
 
 function love.update(dt)

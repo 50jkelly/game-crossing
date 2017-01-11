@@ -1,2 +1,2 @@
-1, item_seed
-2, item_book
+1, item_book
+2, item_seed

@@ -2,6 +2,10 @@ local player = {}
 
 local playerEntity = {
 	id = "player",
+	collides = true,
+	timeSinceLastFrame = 0,
+	spriteId = 'player_walk_down_1',
+	frameCounter = 1,
 	animationPrefix = "player",
 	framesPerSecond = 8,
 	upBlocked = false,
@@ -44,6 +48,48 @@ function player.keyDown()
 		if key == "up" or key =="down" or key == "left" or key == "right" then
 			playerEntity.state = "walk_"..key
 			player.moved = true
+		end
+	end
+end
+
+function player.keyPressed()
+	local key = data.plugins.controls.currentKeyPressed
+
+	if data.state == 'game' and key =='drop' then
+		local actionBar = data.plugins.actionBar
+		local inventory = data.plugins.inventory
+		local items = data.plugins.items
+
+		if actionBar and inventory and items then
+			local actionBarValue = actionBar.getSlotValue(actionBar.activatedSlot())
+			if actionBarValue > 0 then
+				local itemId = inventory.getItem(actionBarValue)
+				if itemId then
+					local x = playerEntity.x
+					local y = playerEntity.y
+
+					if playerEntity.state == 'walk_up' then
+						y = y - items.height - 2
+					end
+
+					if playerEntity.state == 'walk_down' then
+						y = y + playerEntity.height + 2
+					end
+
+					if playerEntity.state == 'walk_left' then
+						x = x - items.width - 2
+						y = y - 10
+					end
+
+					if playerEntity.state == 'walk_right' then
+						x = x + playerEntity.width + 2
+						y = y - 10
+					end
+
+					inventory.removeItem(actionBarValue)
+					items.addToWorld(itemId, x, y)
+				end
+			end
 		end
 	end
 end

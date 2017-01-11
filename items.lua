@@ -1,28 +1,56 @@
 local items = {}
+local itemNames = {}
+local itemSprites = {}
+local itemCount = 0
+
+local scale = 0.5
+items.width = 50 * scale
+items.height = 50 * scale
 
 function items.initialise()
-	items.itemLookup = {}
+	addItem('item_book', 'Book', 'item_book')
+	addItem('item_seed', 'Seed', 'item_seed')
+	items.addToWorld('item_seed', 100, 200)
+	items.addToWorld('item_seed', 100, 230)
+	items.addToWorld('item_seed', 100, 260)
 end
 
-function items.loadGraphics()
-	items.itemLookup['item_seed'] = newItem('item_seed', 'Seed', 'images/item_seed.png')
-	items.itemLookup['item_book'] = newItem('item_book', 'Book', 'images/item_book.png')
+function addItem(id, name, spriteId)
+	itemNames[id] = name
+	itemSprites[id] = spriteId
+end
 
-	local inventory = data.plugins.inventory
-	if inventory then
-		inventory.addItem(items.itemLookup['item_seed'], 110)
-		inventory.addItem(items.itemLookup['item_book'], 3)
-		inventory.highlightedSlot = 1
+function items.addToWorld(itemId, x, y)
+	if itemId == -1 then return end
+	itemCount = itemCount + 1
+	local id = 'item' .. itemCount
+	local spriteId = itemSprites[itemId]
+
+	local staticEntities = data.plugins.staticEntities
+	if staticEntities then
+		staticEntities.add({
+			id = id,
+			itemId = itemId,
+			collides = false,
+			x = x,
+			y = y,
+			width = items.width,
+			height = items.height,
+			drawXOffset = 0,
+			drawYOffset = 0,
+			scale = scale,
+			spriteId = spriteId
+		})
+
+		local triggers = data.plugins.triggers
+		if triggers then
+			triggers.newTrigger(x, y, items.width, items.height, 'item_pickup', nil, id)
+		end
 	end
 end
 
-function newItem(id, name, spritePath)
-	local sprite = love.graphics.newImage(spritePath)
-	return {
-		id = id,
-		name = name,
-		sprite = sprite
-	}
+function items.getName(id)
+	return itemNames[id]
 end
 
 return items

@@ -1,34 +1,15 @@
 local inventory = {}
+inventory.slots = {}
+inventory.slotQuantities = {}
+inventory.highlightedSlot = 1
+local numberOfSlots = 100
+
+-- Hooks
 
 function inventory.initialise()
-	inventory.slotColor = {0, 0, 0, 100}
-	inventory.borderColor = {50, 50, 50, 255}
-	inventory.activatedSlotColor = {100, 100, 100, 100}
-	inventory.activatedBorderColor = {50, 50, 50, 255}
-	inventory.selectedBorderColor = {255, 210, 50, 255}
-	inventory.numberOfQuickSlots = 5
-
-	inventory.slots = {}
-	inventory.slotQuantities = {}
-
-	inventory.quickSlots = {}
-	for i=1, inventory.numberOfQuickSlots, 1 do
-		table.insert(inventory.quickSlots, 0)
-	end
-
-	inventory.activatedSlot = 1
-
-	local controls = data.plugins.controls
-	if controls then
-		inventory.quickSlotKeys = {}
-		for _, _ in ipairs(inventory.quickSlots) do
-			table.insert(inventory.quickSlotKeys, nil)
-		end
-		for index, _ in ipairs(inventory.quickSlots) do
-			if controls.keys['inventorySlot'..index] then
-				inventory.quickSlotKeys[index] = 'inventorySlot'..index
-			end
-		end
+	for i=1, numberOfSlots, 1 do
+		inventory.slots[i] = -1
+		inventory.slotQuantities[i] = -1
 	end
 end
 
@@ -36,13 +17,14 @@ function inventory.loadGraphics()
 	inventory.cursor = love.graphics.newImage('images/cursor.png')
 end
 
+function inventory.assetsLoaded()
+	inventory.addItem('item_book', 1)
+end
+
 function inventory.saveGame()
 	local saveLoad = data.plugins.saveLoad
 	local file = saveLoad.saveFilePath .. 'inventory.txt'
 	saveLoad.writeTable(inventory, file)
-
-	file = saveLoad.saveFilePath .. 'quickSlots.txt'
-	saveLoad.writeTable(inventory.quickSlots, file)
 
 	file = saveLoad.saveFilePath .. 'inventorySlots.txt'
 	saveLoad.writeTable(inventory.slots, file)
@@ -56,9 +38,6 @@ function inventory.loadGame()
 	local file = saveLoad.saveFilePath .. 'inventory.txt'
 	inventory = saveLoad.readTable(inventory, file)
 
-	file = saveLoad.saveFilePath .. 'quickSlots.txt'
-	inventory.quickSlots = saveLoad.readArray(inventory.quickSlots, file)
-
 	file = saveLoad.saveFilePath .. 'inventorySlots.txt'
 	inventory.slots = saveLoad.readArray(inventory.slots, file)
 
@@ -68,17 +47,6 @@ end
 
 function inventory.keyPressed()
 	local key = data.plugins.controls.currentKeyPressed
-	local isQuickSlot = string.match(key, 'inventorySlot(%d+)')
-
-	if data.state == 'game' then
-		if isQuickSlot then
-			for index, qsKey in ipairs(inventory.quickSlotKeys) do
-				if key == qsKey then
-					inventory.activatedSlot = index
-				end
-			end
-		end
-	end
 
 	if data.state == 'inventory' then
 		if key == 'up' and inventory.highlightedSlot then
@@ -93,14 +61,13 @@ function inventory.keyPressed()
 			end
 		end
 
-		if isQuickSlot then
-			for i, v in ipairs(inventory.quickSlots) do
-				if v == inventory.highlightedSlot then
-					inventory.quickSlots[i] = 0
-				end
-			end
-			if tonumber(isQuickSlot) <= inventory.numberOfQuickSlots then
-				inventory.quickSlots[tonumber(isQuickSlot)] = inventory.highlightedSlot
+		local actionBar = data.plugins.actionBar
+		if actionBar then
+			if actionBar.isShortcut(key) then
+				local actionBarSlot = actionBar.getShortcutValue(key)
+				local inventorySlot = inventory.highlightedSlot
+				actionBar.clearValueFromSlots(inventorySlot)
+				actionBar.setSlotValue(actionBarSlot, inventorySlot)
 			end
 		end
 	end
@@ -114,24 +81,45 @@ function inventory.keyPressed()
 	end
 end
 
-function inventory.addItem(item, quantity)
-	table.insert(inventory.slots, item.id)
-	table.insert(inventory.slotQuantities, quantity)
+-- Functions
+
+function inventory.addItem(itemId, quantity)
+	local slot = nextEmptySlot()
+	inventory.slots[slot] = itemId
+	inventory.slotQuantities[slot] = quantity
+	return slot
 end
 
 function inventory.getItem(slotIndex)
-	local slotValue = inventory.slots[slotIndex]
+	local itemId = inventory.slots[slotIndex]
 	local quantity = inventory.slotQuantities[slotIndex]
-	local item = nil
-	local items = data.plugins.items
-	if items then
-		for itemId, value in pairs(items.itemLookup) do
-			if itemId == slotValue then
-				item = value
-			end
+	return itemId, quantity
+end
+
+function inventory.findItem(id)
+	for index, itemId in ipairs(inventory.slots) do
+		if itemId == id then
+			return index
 		end
 	end
-	return item, quantity
+	return nil
+end
+
+function inventory.removeItem(index)
+	if inventory.slotQuantities[index] == 1 then
+		inventory.slots[index] = -1
+		inventory.slotQuantities[index] = -1
+	elseif inventory.slotQuantities[index] > 1 then
+		inventory.slotQuantities[index] = inventory.slotQuantities[index] - 1
+	end
+end
+
+function nextEmptySlot()
+	for i, v in ipairs(inventory.slots) do
+		if type(v) == 'number' and v < 0 then
+			return i
+		end
+	end
 end
 
 return inventory

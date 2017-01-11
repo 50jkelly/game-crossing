@@ -3,29 +3,48 @@ renderer.drawWorldPosition = true
 renderer.drawTriggers = true
 
 function renderer.draw()
-	local entities = concat(data.staticEntities, data.dynamicEntities)
+	local entities = {}
+	local staticEntities = data.plugins.staticEntities
+	if staticEntities then
+		entities = concat(staticEntities.getTable(), data.dynamicEntities)
+	else
+		entities = data.dynamicEntities
+	end
+
 	table.sort(entities, function(a, b)
 		return a.y < b.y
 	end)
 
 	for _, entity in ipairs(entities) do
-		if entity.sprite then
-			local drawX = entity.x + entity.drawXOffset
-			local drawY = entity.y + entity.drawYOffset
-			love.graphics.draw(entity.sprite, drawX, drawY, 0, 1, 1, 0, 0)
+		local sprites = data.plugins.sprites
+		if sprites then
+			local sprite = sprites.getSprite(entity.spriteId)
+			if sprite then
+				local drawX = entity.x + entity.drawXOffset
+				local drawY = entity.y + entity.drawYOffset
+				local scale = 1
+				if entity.scale then scale = entity.scale end
+				love.graphics.draw(sprite, drawX, drawY, 0, scale, scale, 0, 0)
+			end
 		end
 
 		if renderer.drawWorldPosition then
-			love.graphics.setColor(255, 0, 0, 100)
+			if entity.collides then
+				love.graphics.setColor(255, 0, 0, 100)
+			else
+				love.graphics.setColor(0, 255, 0, 100)
+			end
 			love.graphics.rectangle("fill", entity.x, entity.y, entity.width, entity.height)
 			love.graphics.setColor(255,255,255,255)
 		end
 	end
 
-	if renderer.drawTriggers and data.triggers then
-		for _, trigger in ipairs(data.triggers) do
+	local triggers = data.plugins.triggers
+	if renderer.drawTriggers and triggers then
+		for _, triggerId in ipairs(triggers.allTriggers()) do
+			local rect = triggers.getRect(triggerId)
 			love.graphics.setColor(0,0,255,100)
-			love.graphics.rectangle("fill", trigger.x, trigger.y, trigger.width, trigger.height)
+			love.graphics.rectangle("fill", rect.x, rect.y, rect.width, rect.height)
 			love.graphics.setColor(255,255,255,255)
 		end
 	end
@@ -52,53 +71,65 @@ function renderer.drawUI()
 		end
 	end
 
-	-- Draw inventory quick slots
+	-- Draw the action bar
 	
-	local inventory = data.plugins.inventory
+	local actionBar = data.plugins.actionBar
 	local controls = data.plugins.controls
-	if inventory then
-		local totalQuickSlots = inventory.numberOfQuickSlots
+	if actionBar then
+		local numberOfSlots = actionBar.numberOfSlots()
 		local margin = 10
 		local width = 50
 		local height = 50
-		local totalWidth = (totalQuickSlots * width) + (totalQuickSlots * margin) + margin
+		local totalWidth = (numberOfSlots * width) + (numberOfSlots * margin) + margin
 		local x = (data.screenWidth - totalWidth) / 2
 		local y = data.screenHeight - height - margin
 		local startX = x
 
-		for index, quickSlot in ipairs(inventory.quickSlots) do
-			-- Draw the main panel
+		for i=1, numberOfSlots, 1 do
 
-			local slotColor = inventory.slotColor
-			local borderColor = inventory.borderColor
+			-- Draw the panels
 
-			if index == inventory.activatedSlot then
-				slotColor = inventory.activatedSlotColor
-				borderColor = inventory.activatedBorderColor
+			local panelColor = actionBar.panelColor
+			local borderColor = actionBar.borderColor
+
+			if i == actionBar.activatedSlot() then
+				panelColor = actionBar.activatedPanelColor
+				borderColor = actionBar.activatedBorderColor
 			end
 
-			drawPanel(x, y, width, height, slotColor, borderColor)
+			drawPanel(x, y, width, height, panelColor, borderColor)
 
 			-- Draw the sprite and quantity of the item in the quickslot
 
-			if quickSlot and inventory.slots[quickSlot] then
-				local item, quantity = inventory.getItem(quickSlot)
-				love.graphics.draw(item.sprite, x, y)
+			local slotValue = actionBar.getSlotValue(i)
+			local inventory = data.plugins.inventory
+			if inventory and inventory.slots[slotValue] then
+				local itemId, quantity = inventory.getItem(slotValue)
+				local sprites = data.plugins.sprites
+				if sprites then
+					local sprite = sprites.getSprite(itemId)
+					if sprite then
+						love.graphics.draw(sprite, x, y)
+					end
+				end
 
-				local rightMargin = 12
-				if quantity > 9 then
-					rightMargin = 20
+				if quantity > 0 then
+					local rightMargin = 12
+					if quantity > 9 then
+						rightMargin = 20
+					end
+					if quantity > 99 then
+						rightMargin = 24
+					end
+					love.graphics.print(quantity, x + width - rightMargin, y + 4)
 				end
-				if quantity > 99 then
-					rightMargin = 24
-				end
-				love.graphics.print(quantity, x + width - rightMargin, y + 4)
 			end
 
 			-- Draw the shortcut key for the quickslot
 			
-			if controls and inventory.quickSlotKeys[index] then
-				local key = controls.keys[inventory.quickSlotKeys[index]]
+			local shortcut = 'actionBar'..i
+			local key = actionBar.getShortcutValue(shortcut)
+			if controls and key then
 				love.graphics.print(key, x + 4, y + height - 16)
 			end
 
@@ -108,7 +139,9 @@ function renderer.drawUI()
 		-- Draw player inventory
 		
 		if data.state == 'inventory' and data.plugins.messageBox then
+
 			-- Draw the panel
+
 			local backgroundColor = data.plugins.messageBox.backgroundColor
 			local borderColor = data.plugins.messageBox.borderColor
 			local textColor = data.plugins.messageBox.textColor
@@ -120,6 +153,7 @@ function renderer.drawUI()
 			drawPanel(panelX, panelY, panelWidth, panelHeight, backgroundColor, borderColor)
 
 			-- Print the items in the player's inventory
+
 			local lineHeight = 20
 			local textYMargin = 8
 			local x = panelX + margin
@@ -127,52 +161,54 @@ function renderer.drawUI()
 			local startX = x
 			local startY = y
 
-			for index, slot in ipairs(inventory.slots) do
-				local item, quantity = inventory.getItem(index)
+			local inventory = data.plugins.inventory
+			if inventory then
+				for index, slot in ipairs(inventory.slots) do
+					local itemId, quantity = inventory.getItem(index)
 
-				if item then
-					-- Draw the cursor
-					if inventory.highlightedSlot == index then
-						love.graphics.draw(inventory.cursor, x, y)
-					end
+					if itemId and itemId ~= -1 then
 
-					-- Print the item's quickslot shortcut
-					x = x + 50
-					y = y + textYMargin
-					if controls then
-						local quickSlotIndex = nil
-						for qsIndex, qsValue in ipairs(inventory.quickSlots) do
-							if qsValue == index then
-								quickSlotIndex = qsIndex
+						-- Draw the cursor
+						if inventory.highlightedSlot == index then
+							love.graphics.draw(inventory.cursor, x, y)
+						end
+
+						-- Print the item's quickslot shortcut
+						x = x + 50
+						y = y + textYMargin
+						local actionBarSlot = actionBar.getSlotIndex(index)
+						if actionBarSlot then
+							local shortcutIndex = 'actionBar'..actionBarSlot
+							local shortcutValue = actionBar.getShortcutValue(shortcutIndex)
+							love.graphics.print(shortcutValue, x, y)
+						end
+
+						-- Print the item's name
+						x = x + 30
+						local items = data.plugins.items
+						if items then
+							local name = items.getName(itemId)
+							if name then
+								love.graphics.print(name, x, y)
 							end
 						end
-						if quickSlotIndex then
-							local quickSlotKeyIndex = inventory.quickSlotKeys[quickSlotIndex]
-							local quickSlotKey = controls.keys[quickSlotKeyIndex]
-							if quickSlotKey then
-								love.graphics.print(quickSlotKey, x, y)
+
+						-- Print the item's quantity
+						x = x + 80
+						love.graphics.print(quantity, x, y)
+
+						-- Draw the item's sprite if it is highlighted
+						x = panelX + (panelWidth - margin - 50)
+						if inventory.highlightedSlot == index then
+							local sprites = data.plugins.sprites
+							if sprites then
+								love.graphics.draw(sprites.getSprite(itemId), x, startY)
 							end
 						end
-					end
-					
-					-- Print the item's name
-					x = x + 30
-					if item.name then
-						love.graphics.print(item.name, x, y)
-					end
 
-					-- Print the item's quantity
-					x = x + 80
-					love.graphics.print(quantity, x, y)
-
-					-- Draw the item's sprite if it is highlighted
-					x = panelX + (panelWidth - margin - 50)
-					if inventory.highlightedSlot == index then
-						love.graphics.draw(item.sprite, x, startY)
+						x = startX
+						y = y + lineHeight - textYMargin
 					end
-
-					x = startX
-					y = y + lineHeight - textYMargin
 				end
 			end
 		end

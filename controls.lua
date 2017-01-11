@@ -6,20 +6,13 @@ controls.keys = {
 	left= "a",
 	right = "d",
 	use = 'e',
+	drop = 'r',
 	openInventory = 'i',
-	inventorySlot1 = '1',
-	inventorySlot2 = '2',
-	inventorySlot3 = '3',
-	inventorySlot4 = '4',
-	inventorySlot5 = '5',
-	inventorySlot6 = '6',
-	inventorySlot7 = '7',
-	inventorySlot8 = '8',
-	inventorySlot9 = '9',
-	inventorySlot10 = '0',
 	saveGame = 'z',
 	loadGame = 'l'
 }
+
+-- Hooks
 
 function controls.update()
 	for key, _ in pairs(controls.keys) do
@@ -45,5 +38,10 @@ function love.keypressed(key)
 	end
 end
 
+-- Functions
+
+function controls.add(action, key)
+	controls.keys[action] = key
+end
 
 return controls

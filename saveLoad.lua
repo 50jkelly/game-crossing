@@ -38,9 +38,10 @@ function saveLoad.writeTable(table, file)
 end
 
 function saveLoad.readTable(table, file)
-	if not saveLoad.fileExists(file) then return table end
+	if not saveLoad.fileExists(file) then return false end
+	table = {}
 	for line in io.lines(file) do
-		local index, value = string.match(line, '(%w+), ([%w%d_]+)')
+		local index, value = string.match(line, '(%w+), ([.%w%d_-]+)')
 
 		if index then
 			if string.match(value, '^[%d.]+$') then
@@ -60,7 +61,8 @@ function saveLoad.readTable(table, file)
 end
 
 function saveLoad.readArray(array, file)
-	if not saveLoad.fileExists(file) then return array end
+	if not saveLoad.fileExists(file) then return false end
+	array = {}
 	for line in io.lines(file) do
 		local index, value = string.match(line, '(%w+), ([%w%d_]+)')
 
