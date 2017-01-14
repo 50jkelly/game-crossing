@@ -1,9 +1,0 @@
-collides, true
-x, 20
-drawYOffset, -190
-y, 70
-spriteId, tree1
-width, 30
-drawXOffset, -90
-height, 30
-id, tree1

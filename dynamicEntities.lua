@@ -8,11 +8,12 @@ function plugin.initialise()
 end
 
 function plugin.loadGame()
-	pluginData = data.plugins.saveLoad.read('saves/items.lua')
+	pluginData = data.plugins.saveLoad.read('saves/dynamicEntities.lua')
+	callHook('plugins', 'dynamicEntitiesLoaded')
 end
 
 function plugin.saveGame()
-	data.plugins.saveLoad.write(pluginData, 'saves/items.lua')
+	data.plugins.saveLoad.write(pluginData, 'saves/dynamicEntities.lua')
 end
 
 -- Public functions

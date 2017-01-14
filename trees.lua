@@ -1,17 +1,6 @@
 local trees = {}
 local treeCount = 0
 
--- Hooks
-
-function trees.initialise()
-	local staticEntities = data.plugins.staticEntities
-	if staticEntities then
-		staticEntities.add(newTree(20, 70, 'tree1'))
-		staticEntities.add(newTree(20, 100, 'tree1'))
-		staticEntities.add(newTree(50, 70, 'tree1'))
-	end
-end
-
 -- Functions
 
 function newTree(x, y, spriteId)

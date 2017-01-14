@@ -1,73 +1,52 @@
-local inventory = {}
-inventory.slots = {}
-inventory.slotQuantities = {}
-inventory.highlightedSlot = 1
-local numberOfSlots = 100
+local plugin = {}
+local pluginData = {}
 
 -- Hooks
 
-function inventory.initialise()
-	for i=1, numberOfSlots, 1 do
-		inventory.slots[i] = -1
-		inventory.slotQuantities[i] = -1
-	end
+function plugin.initialise()
+	plugin.loadGame()
+	plugin.highlightedSlot = 1
 end
 
-function inventory.loadGraphics()
-	inventory.cursor = love.graphics.newImage('images/cursor.png')
+function plugin.loadGame()
+	pluginData = data.plugins.saveLoad.read('saves/inventory.lua')
 end
 
-function inventory.assetsLoaded()
-	inventory.addItem('item_book', 1)
+function plugin.saveGame()
+	data.plugins.saveLoad.write(pluginData, 'saves/inventory.lua')
 end
 
-function inventory.saveGame()
-	local saveLoad = data.plugins.saveLoad
-	local file = saveLoad.saveFilePath .. 'inventory.txt'
-	saveLoad.writeTable(inventory, file)
-
-	file = saveLoad.saveFilePath .. 'inventorySlots.txt'
-	saveLoad.writeTable(inventory.slots, file)
-
-	file = saveLoad.saveFilePath .. 'inventorySlotQuantities.txt'
-	saveLoad.writeTable(inventory.slotQuantities, file)
+function plugin.loadGraphics()
+	plugin.cursor = love.graphics.newImage('images/cursor.png')
 end
 
-function inventory.loadGame()
-	local saveLoad = data.plugins.saveLoad
-	local file = saveLoad.saveFilePath .. 'inventory.txt'
-	inventory = saveLoad.readTable(inventory, file)
-
-	file = saveLoad.saveFilePath .. 'inventorySlots.txt'
-	inventory.slots = saveLoad.readArray(inventory.slots, file)
-
-	file = saveLoad.saveFilePath .. 'inventorySlotQuantities.txt'
-	inventory.slotQuantities = saveLoad.readArray(inventory.slotQuantities, file)
-end
-
-function inventory.keyPressed()
+function plugin.keyPressed()
 	local key = data.plugins.controls.currentKeyPressed
 
 	if data.state == 'inventory' then
-		if key == 'up' and inventory.highlightedSlot then
-			if inventory.highlightedSlot > 1 then
-				inventory.highlightedSlot = inventory.highlightedSlot - 1
+		if key == 'up' and plugin.highlightedSlot then
+			if plugin.highlightedSlot > 1 then
+				plugin.highlightedSlot = plugin.highlightedSlot - 1
 			end
 		end
 
-		if key == 'down' and inventory.highlightedSlot then 
-			if inventory.highlightedSlot < table.getn(inventory.slots) then
-				inventory.highlightedSlot = inventory.highlightedSlot + 1
+		if key == 'down' and plugin.highlightedSlot then 
+			if plugin.highlightedSlot < table.getn(pluginData) then
+				plugin.highlightedSlot = plugin.highlightedSlot + 1
 			end
 		end
 
 		local actionBar = data.plugins.actionBar
-		if actionBar then
-			if actionBar.isShortcut(key) then
-				local actionBarSlot = actionBar.getShortcutValue(key)
-				local inventorySlot = inventory.highlightedSlot
-				actionBar.clearValueFromSlots(inventorySlot)
-				actionBar.setSlotValue(actionBarSlot, inventorySlot)
+		if actionBar and string.match(key, 'actionBar') then
+
+			-- Check if the key is an action bar shortcut key
+			local actionBarSlot
+			for i, v in pairs(actionBar.getPluginData()) do
+				if key == v.shortcutKey then
+					v.inventorySlot = plugin.highlightedSlot
+				elseif v.inventorySlot == plugin.highlightedSlot then
+					v.inventorySlot = 0
+				end
 			end
 		end
 	end
@@ -81,45 +60,67 @@ function inventory.keyPressed()
 	end
 end
 
--- Functions
+function plugin.itemPickupFire(triggerData)
 
-function inventory.addItem(itemId, quantity)
-	local slot = nextEmptySlot()
-	inventory.slots[slot] = itemId
-	inventory.slotQuantities[slot] = quantity
-	return slot
-end
+	-- Are there instances of the picked up item in the inventory?
 
-function inventory.getItem(slotIndex)
-	local itemId = inventory.slots[slotIndex]
-	local quantity = inventory.slotQuantities[slotIndex]
-	return itemId, quantity
-end
-
-function inventory.findItem(id)
-	for index, itemId in ipairs(inventory.slots) do
-		if itemId == id then
-			return index
+	local inInventory
+	for index, slot in ipairs(pluginData) do
+		if triggerData.item == slot.item then
+			inInventory = slot
+			break
 		end
 	end
-	return nil
-end
 
-function inventory.removeItem(index)
-	if inventory.slotQuantities[index] == 1 then
-		inventory.slots[index] = -1
-		inventory.slotQuantities[index] = -1
-	elseif inventory.slotQuantities[index] > 1 then
-		inventory.slotQuantities[index] = inventory.slotQuantities[index] - 1
+	-- If the item is already in the inventory, simply increase its quantity by 1
+
+	if inInventory then
+		inInventory.amount = inInventory.amount + 1
 	end
-end
 
-function nextEmptySlot()
-	for i, v in ipairs(inventory.slots) do
-		if type(v) == 'number' and v < 0 then
-			return i
+	-- If the item is not already in the inventory, check if there are empty slots for it
+
+	local emptySlot
+	if not inInventory then
+		for index, slot in ipairs(pluginData) do
+			if slot.item == 'empty' then
+				emptySlot = {
+					slot = slot,
+					index = index
+				}
+				break
+			end
 		end
 	end
+
+	-- If there is an empty slot, place this item into it with a quantity of 1
+
+	if emptySlot then
+		emptySlot.slot.item = triggerData.item
+		emptySlot.slot.amount = 1
+		callHook('plugins', 'newInventorySlot', emptySlot)
+	end
+
+	-- Otherwise, display an inventory full message TODO
 end
 
-return inventory
+function plugin.itemDrop(itemData)
+	
+	-- Subtract 1 from the amount of the dropped item
+
+	itemData.inventorySlot.amount = itemData.inventorySlot.amount - 1
+
+	-- If amount reaches 0, then remove the item from the inventory
+
+	if itemData.inventorySlot.amount == 0 then
+		itemData.inventorySlot.item = 'empty'
+	end
+end
+
+-- Public functions
+
+function plugin.getPluginData()
+	return pluginData
+end
+
+return plugin

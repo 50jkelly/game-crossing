@@ -3,17 +3,34 @@ renderer.drawWorldPosition = true
 renderer.drawTriggers = true
 
 function renderer.draw()
+
+	-- Merge static and dynamic entity tables into a single array
+
 	local entities = {}
 	local staticEntities = data.plugins.staticEntities
+	local dynamicEntities = data.plugins.dynamicEntities
+
 	if staticEntities then
-		entities = concat(staticEntities.getTable(), data.dynamicEntities)
-	else
-		entities = data.dynamicEntities
+		for i, v in pairs(staticEntities.getPluginData()) do
+			v.id = i
+			table.insert(entities, v)
+		end
 	end
+
+	if dynamicEntities then
+		for i, v in pairs(dynamicEntities.getPluginData()) do
+			v.id = i
+			table.insert(entities, v)
+		end
+	end
+	
+	-- Sort the entities array according to y position
 
 	table.sort(entities, function(a, b)
 		return a.y < b.y
 	end)
+
+	-- Draw each entity
 
 	for _, entity in ipairs(entities) do
 		local sprites = data.plugins.sprites
@@ -22,11 +39,12 @@ function renderer.draw()
 			if sprite then
 				local drawX = entity.x + entity.drawXOffset
 				local drawY = entity.y + entity.drawYOffset
-				local scale = 1
-				if entity.scale then scale = entity.scale end
+				local scale = entity.scale or 1
 				love.graphics.draw(sprite, drawX, drawY, 0, scale, scale, 0, 0)
 			end
 		end
+
+		-- Draw the world position
 
 		if renderer.drawWorldPosition then
 			if entity.collides then
@@ -39,13 +57,14 @@ function renderer.draw()
 		end
 	end
 
+	-- Draw the triggers
+
 	local triggers = data.plugins.triggers
 	if renderer.drawTriggers and triggers then
-		for _, triggerId in ipairs(triggers.allTriggers()) do
-			local rect = triggers.getRect(triggerId)
-			love.graphics.setColor(0,0,255,100)
-			love.graphics.rectangle("fill", rect.x, rect.y, rect.width, rect.height)
-			love.graphics.setColor(255,255,255,255)
+		for id, trigger in pairs(triggers.getPluginData()) do
+			love.graphics.setColor(0, 0, 255, 100)
+			love.graphics.rectangle("fill", trigger.x, trigger.y, trigger.width, trigger.height)
+			love.graphics.setColor(255, 255, 255, 255)
 		end
 	end
 end
@@ -74,9 +93,9 @@ function renderer.drawUI()
 	-- Draw the action bar
 	
 	local actionBar = data.plugins.actionBar
-	local controls = data.plugins.controls
 	if actionBar then
-		local numberOfSlots = actionBar.numberOfSlots()
+		local slots = actionBar.getPluginData()
+		local numberOfSlots = table.getn(slots)
 		local margin = 10
 		local width = 50
 		local height = 50
@@ -85,52 +104,66 @@ function renderer.drawUI()
 		local y = data.screenHeight - height - margin
 		local startX = x
 
-		for i=1, numberOfSlots, 1 do
+		for i, slot in pairs(slots) do
+
+			-- Get all the data needed to draw this panel
+
+			local inventory = data.plugins.inventory
+			local items = data.plugins.items
+			local controls = data.plugins.controls
+			local sprites = data.plugins.sprites
+
+			local inventorySlot
+			if inventory then
+				inventorySlot = inventory.getPluginData()[slot.inventorySlot]
+			end
+
+			local item
+			if inventorySlot and items then
+				item = items.getPluginData()[inventorySlot.item]
+			end
+
+			local sprite
+			if item and sprites then
+				sprite = sprites.getSprite(item.sprite)
+			end
 
 			-- Draw the panels
 
 			local panelColor = actionBar.panelColor
 			local borderColor = actionBar.borderColor
 
-			if i == actionBar.activatedSlot() then
+			if i == actionBar.activatedSlot then
 				panelColor = actionBar.activatedPanelColor
 				borderColor = actionBar.activatedBorderColor
 			end
 
 			drawPanel(x, y, width, height, panelColor, borderColor)
 
-			-- Draw the sprite and quantity of the item in the quickslot
+			-- Draw the sprite and quantity of the item in the action bar
 
-			local slotValue = actionBar.getSlotValue(i)
-			local inventory = data.plugins.inventory
-			if inventory and inventory.slots[slotValue] then
-				local itemId, quantity = inventory.getItem(slotValue)
-				local sprites = data.plugins.sprites
-				if sprites then
-					local sprite = sprites.getSprite(itemId)
-					if sprite then
-						love.graphics.draw(sprite, x, y)
-					end
-				end
+			if sprite then
+				love.graphics.draw(sprite, x, y)
+			end
 
-				if quantity > 0 then
-					local rightMargin = 12
-					if quantity > 9 then
-						rightMargin = 20
-					end
-					if quantity > 99 then
-						rightMargin = 24
-					end
-					love.graphics.print(quantity, x + width - rightMargin, y + 4)
+			if inventorySlot and inventorySlot.amount > 0 then
+				local rightMargin = 12
+				if inventorySlot.amount > 9 then
+					rightMargin = 20
 				end
+				if inventorySlot.amount > 99 then
+					rightMargin = 24
+				end
+				love.graphics.print(inventorySlot.amount, x + width - rightMargin, y + 4)
 			end
 
 			-- Draw the shortcut key for the quickslot
 			
-			local shortcut = 'actionBar'..i
-			local key = actionBar.getShortcutValue(shortcut)
-			if controls and key then
-				love.graphics.print(key, x + 4, y + height - 16)
+			local controls = data.plugins.controls
+			if controls then
+				if controls then
+					love.graphics.print(controls.keys[slot.shortcutKey], x + 4, y + height - 16)
+				end
 			end
 
 			x = x + width + 10
@@ -140,54 +173,61 @@ function renderer.drawUI()
 		
 		if data.state == 'inventory' and data.plugins.messageBox then
 
-			-- Draw the panel
+			local inventory = data.plugins.inventory
+			if inventory then
 
-			local backgroundColor = data.plugins.messageBox.backgroundColor
-			local borderColor = data.plugins.messageBox.borderColor
-			local textColor = data.plugins.messageBox.textColor
-			local panelWidth = 300
-			local panelHeight = 400
-			local panelX = (data.screenWidth - panelWidth) / 2
-			local panelY = (data.screenHeight - panelHeight) / 2
-			
-			drawPanel(panelX, panelY, panelWidth, panelHeight, backgroundColor, borderColor)
+				-- Draw the panel
+
+				local slots = inventory.getPluginData()
+				local backgroundColor = data.plugins.messageBox.backgroundColor
+				local borderColor = data.plugins.messageBox.borderColor
+				local textColor = data.plugins.messageBox.textColor
+				local lineHeight = 20
+				local panelWidth = 300
+				local panelHeight = table.getn(slots) * lineHeight
+				local panelX = (data.screenWidth - panelWidth) / 2
+				local panelY = (data.screenHeight - panelHeight) / 2
+				local textYMargin = 8
+				local x = panelX + margin
+				local y = panelY + margin
+				local startX = x
+				local startY = y
+
+				drawPanel(panelX, panelY, panelWidth, panelHeight, backgroundColor, borderColor)
 
 			-- Print the items in the player's inventory
 
-			local lineHeight = 20
-			local textYMargin = 8
-			local x = panelX + margin
-			local y = panelY + margin
-			local startX = x
-			local startY = y
+				for index, slot in ipairs(slots) do
 
-			local inventory = data.plugins.inventory
-			if inventory then
-				for index, slot in ipairs(inventory.slots) do
-					local itemId, quantity = inventory.getItem(index)
+					-- Draw the cursor
+					if inventory.highlightedSlot == index then
+						love.graphics.draw(inventory.cursor, x, y)
+					end
 
-					if itemId and itemId ~= -1 then
-
-						-- Draw the cursor
-						if inventory.highlightedSlot == index then
-							love.graphics.draw(inventory.cursor, x, y)
-						end
+					if slot.item ~= 'empty' then
 
 						-- Print the item's quickslot shortcut
 						x = x + 50
 						y = y + textYMargin
-						local actionBarSlot = actionBar.getSlotIndex(index)
-						if actionBarSlot then
-							local shortcutIndex = 'actionBar'..actionBarSlot
-							local shortcutValue = actionBar.getShortcutValue(shortcutIndex)
-							love.graphics.print(shortcutValue, x, y)
+						local actionBar = data.plugins.actionBar
+						if actionBar then
+							for i, actionBarSlot in pairs(actionBar.getPluginData()) do
+								if actionBarSlot.inventorySlot == index then
+									local shortcutLabel = actionBarSlot.shortcutKey
+									local controls = data.plugins.controls
+									if controls then
+										local shortcutValue = controls.keys[shortcutLabel]
+										love.graphics.print(shortcutValue, x, y)
+									end
+								end
+							end
 						end
 
 						-- Print the item's name
 						x = x + 30
 						local items = data.plugins.items
 						if items then
-							local name = items.getName(itemId)
+							local name = items.getPluginData()[slot.item].name
 							if name then
 								love.graphics.print(name, x, y)
 							end
@@ -195,20 +235,25 @@ function renderer.drawUI()
 
 						-- Print the item's quantity
 						x = x + 80
-						love.graphics.print(quantity, x, y)
+						love.graphics.print(slot.amount, x, y)
 
 						-- Draw the item's sprite if it is highlighted
 						x = panelX + (panelWidth - margin - 50)
 						if inventory.highlightedSlot == index then
 							local sprites = data.plugins.sprites
+							local items = data.plugins.items
+							local item = items.getPluginData()[slot.item]
+							local sprite = sprites.getSprite(item.sprite)
 							if sprites then
-								love.graphics.draw(sprites.getSprite(itemId), x, startY)
+								love.graphics.draw(sprite, x, startY)
 							end
 						end
-
-						x = startX
-						y = y + lineHeight - textYMargin
 					end
+
+					-- Move the coordinates to start drawing the next line
+
+					x = startX
+					y = y + lineHeight - textYMargin
 				end
 			end
 		end

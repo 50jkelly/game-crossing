@@ -1,3 +1,0 @@
-trigger1, item_pickup
-trigger2, item_pickup
-trigger3, item_pickup

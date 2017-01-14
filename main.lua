@@ -17,6 +17,7 @@ data.plugins = {
 	collision = require "collision",
 	animation = require "animation",
 	staticEntities = require 'staticEntities',
+	dynamicEntities = require 'dynamicEntities',
 	player = require "player",
 	triggers = require "triggers",
 	messageBox = require "messageBox",
@@ -53,10 +54,10 @@ function love.draw()
 	callHook('plugins', 'drawUI')
 end
 
-function callHook(collection, method)
+function callHook(collection, method, hookData)
 	for _, value in pairs(data[collection]) do
 		if value[method] ~= nil then
-			value[method]()
+			value[method](hookData)
 		end
 	end
 end
@@ -68,13 +69,23 @@ function overlapping(rect1, rect2)
 		or rect2.y + rect2.height < rect1.y)
 end
 
-function concat(table1, table2)
+function merge(table1, table2)
 	local t = {}
-	for _, item in ipairs(table1) do
-		table.insert(t, item)
+	for i, v in pairs(table1) do
+		t[i] = v
 	end
-	for _, item in ipairs(table2) do
-		table.insert(t, item)
+	for i, v in pairs(table2) do
+		t[i] = v
 	end
 	return t
+end
+
+function getNextFreeId(data, prefix)
+	local id = 1
+	while true do
+		if not data[prefix..id] then
+			return prefix..id
+		end
+		id = id + 1
+	end
 end

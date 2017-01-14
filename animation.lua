@@ -1,69 +1,61 @@
-local animation = {}
+local plugin = {}
+local pluginData = {}
 
-function animation.assetsLoaded()
-	local player = data.player
-	if player then
-		player.walk_down_1_sprite = 'player_walk_down_1'
-		player.walk_down_2_sprite = 'player_walk_down_2'
-		player.walk_down_3_sprite = 'player_walk_down_3'
-		player.walk_down_4_sprite = 'player_walk_down_4'
-		player.walk_down_5_sprite = 'player_walk_down_5'
-		player.walk_down_6_sprite = 'player_walk_down_6'
-		player.walk_down_7_sprite = 'player_walk_down_7'
-		player.walk_down_8_sprite = 'player_walk_down_8'
-		player.walk_left_1_sprite = 'player_walk_left_1'
-		player.walk_left_2_sprite = 'player_walk_left_2'
-		player.walk_left_3_sprite = 'player_walk_left_3'
-		player.walk_left_4_sprite = 'player_walk_left_4'
-		player.walk_left_5_sprite = 'player_walk_left_5'
-		player.walk_left_6_sprite = 'player_walk_left_6'
-		player.walk_left_7_sprite = 'player_walk_left_7'
-		player.walk_left_8_sprite = 'player_walk_left_8'
-		player.walk_right_1_sprite = 'player_walk_right_1'
-		player.walk_right_2_sprite = 'player_walk_right_2'
-		player.walk_right_3_sprite = 'player_walk_right_3'
-		player.walk_right_4_sprite = 'player_walk_right_4'
-		player.walk_right_5_sprite = 'player_walk_right_5'
-		player.walk_right_6_sprite = 'player_walk_right_6'
-		player.walk_right_7_sprite = 'player_walk_right_7'
-		player.walk_right_8_sprite = 'player_walk_right_8'
-		player.walk_up_1_sprite = 'player_walk_up_1'
-		player.walk_up_2_sprite = 'player_walk_up_2'
-		player.walk_up_3_sprite = 'player_walk_up_3'
-		player.walk_up_4_sprite = 'player_walk_up_4'
-		player.walk_up_5_sprite = 'player_walk_up_5'
-		player.walk_up_6_sprite = 'player_walk_up_6'
-		player.walk_up_7_sprite = 'player_walk_up_7'
-		player.walk_up_8_sprite = 'player_walk_up_8'
-	end
+-- Hooks
+
+function plugin.initialise()
+	plugin.loadGame()
 end
 
-function animation.update()
-	local entities = concat(data.staticEntities, data.dynamicEntities)
-	for _, entity in ipairs(entities) do
-		if entity.resetAnimation then
-			reset(entity)
-		elseif entity.cycleAnimation then
-			cycleFrames(entity, data)
+function plugin.loadGame()
+	pluginData = data.plugins.saveLoad.read('saves/animations.lua')
+end
+
+function plugin.saveGame()
+	data.plugins.saveLoad.write(pluginData, 'saves/animations.lua')
+end
+
+function plugin.update()
+	local dynamicEntities = data.plugins.dynamicEntities
+	if dynamicEntities then
+		for _, entity in pairs(dynamicEntities.getPluginData()) do
+			if entity.resetAnimation then
+				reset(entity)
+			elseif entity.cycleAnimation then
+				cycleFrames(entity)
+			end
+			entity.resetAnimation = false
+			entity.cycleAnimation = false
 		end
-		entity.resetAnimation = false
-		entity.cycleAnimation = false
 	end
 end
+
+-- Public functions
+
+function plugin.getPluginData()
+	return pluginData
+end
+
+-- Private functions
 
 function reset(entity)
 	if entity.id == 'player' then
-		local player = data.player
-		if entity.state == 'walk_up' then entity.spriteId = player.walk_up_1_sprite
-		elseif entity.state == 'walk_down' then entity.spriteId = player.walk_down_1_sprite
-		elseif entity.state == 'walk_left' then entity.spriteId = player.walk_left_1_sprite
-		elseif entity.state == 'walk_right' then entity.spriteId = player.walk_right_1_sprite
-		else entity.spriteId = player.walk_down_1.sprite end
+		local walkUpSprite = pluginData.player.walk_up_1_sprite
+		local walkDownSprite = pluginData.player.walk_down_1_sprite
+		local walkLeftSprite = pluginData.player.walk_left_1_sprite
+		local walkRightSprite = pluginData.player.walk_right_1_sprite
+
+		if entity.state == 'walk_up' then entity.spriteId = walkUpSprite
+		elseif entity.state == 'walk_down' then entity.spriteId = walkDownSprite
+		elseif entity.state == 'walk_left' then entity.spriteId = walkLeftSprite
+		elseif entity.state == 'walk_right' then entity.spriteId = walkRightSprite
+		else entity.spriteId = walkDownSprite end
 	end
 end
 
 function cycleFrames(entity)
 	if entity.id == 'player' then
+
 		-- Maintain time since last player animation update
 		entity.timeSinceLastFrame = entity.timeSinceLastFrame + data.dt
 
@@ -78,8 +70,8 @@ function cycleFrames(entity)
 
 		-- Set the current sprite
 		local spriteId = entity.state .. '_' .. entity.frameCounter .. '_sprite'
-		entity.spriteId = entity[spriteId]
+		entity.spriteId = pluginData.player[spriteId]
 	end
 end
 
-return animation
+return plugin

@@ -1,3 +1,0 @@
-trigger1, item1
-trigger2, item2
-trigger3, item3

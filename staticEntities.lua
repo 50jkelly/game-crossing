@@ -1,60 +1,45 @@
-local staticEntities = {}
-local staticEntitiesTable = {}
-local staticEntitiesCount = 1
+local plugin = {}
+local pluginData = {}
 
-function staticEntities.saveGame()
-	local saveLoad = data.plugins.saveLoad
-	for index, entity in ipairs(staticEntitiesTable) do
-		local file = saveLoad.saveFilePath .. 'staticEntity' .. index .. '.txt'
-		saveLoad.writeTable(entity, file)
-	end
+-- Hooks
+
+function plugin.initialise()
+	plugin.loadGame()
 end
 
-function staticEntities.loadGame()
-	staticEntitiesTable = {}
-	local saveLoad = data.plugins.saveLoad
-	local i = 1
-	while true do
-		local file = saveLoad.saveFilePath .. 'staticEntity' .. i .. '.txt'
-		local entity = saveLoad.readTable({}, file)
-		if entity then
-			table.insert(staticEntitiesTable, entity)
-			i = i + 1
-		else
-			break
-		end
-	end
-	staticEntitiesCount = table.getn(staticEntitiesTable)
+function plugin.loadGame()
+	pluginData = data.plugins.saveLoad.read('saves/staticEntities.lua')
 end
 
-function staticEntities.getTable()
-	return staticEntitiesTable
+function plugin.saveGame()
+	data.plugins.saveLoad.write(pluginData, 'saves/staticEntities.lua')
 end
 
-function staticEntities.add(entity)
-	table.insert(staticEntitiesTable, entity)
+function plugin.itemPickupFire(triggerData)
+	pluginData[triggerData.entity] = nil
 end
 
-function staticEntities.remove(id)
-	local found = nil
-	for index, entity in ipairs(staticEntitiesTable) do
-		if entity.id == id then
-			found = index
-			break
-		end
-	end
-	if found then
-		table.remove(staticEntitiesTable, found)
-	end
+function plugin.itemDrop(itemData)
+
+	-- Add the item's data to the static entities data
+
+	pluginData[itemData.staticEntityId] = {
+		collides = false,
+		x = itemData.item.x,
+		y = itemData.item.y,
+		width = 25,
+		height = 25,
+		drawXOffset = 0,
+		drawYOffset = 0,
+		spriteId = itemData.item.sprite,
+		scale = 0.5
+	}
 end
 
-function staticEntities.getEntity(id)
-	for _, entity in ipairs(staticEntitiesTable) do
-		if entity.id == id then
-			return entity
-		end
-	end
-	return nil
+-- Public functions
+
+function plugin.getPluginData()
+	return pluginData
 end
 
-return staticEntities
+return plugin

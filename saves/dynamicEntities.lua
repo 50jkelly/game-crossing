@@ -1,0 +1,23 @@
+local data = {}
+data['player'] = {}
+data['player']['collides'] = true
+data['player']['timeSinceLastFrame'] = 0
+data['player']['spriteId'] = 'player_walk_down_1'
+data['player']['frameCounter'] = 1
+data['player']['framesPerSecond'] = 8
+data['player']['upBlocked'] = false
+data['player']['downBlocked'] = false
+data['player']['leftBlocked'] = false
+data['player']['rightBlocked'] = false
+data['player']['speed'] = 100
+data['player']['direction'] = none
+data['player']['state'] = 'walk_down'
+data['player']['x'] = 100
+data['player']['y'] = 100
+data['player']['oldX'] = 100
+data['player']['oldY'] = 100
+data['player']['width'] = 20
+data['player']['height'] = 10
+data['player']['drawXOffset'] = 0
+data['player']['drawYOffset'] = -16
+return data

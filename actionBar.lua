@@ -1,134 +1,103 @@
-local actionBar = {}
+local plugin = {}
+local pluginData = {}
 
 -- Colors
-actionBar.panelColor = {0, 0, 0, 100}
-actionBar.borderColor = {50, 50, 50, 255}
-actionBar.activatedPanelColor = {100, 100, 100, 100}
-actionBar.activatedBorderColor = {50, 50, 50, 255}
-
--- Action bar slots
-local numberOfSlots = 10
-local activatedSlot = 1
-local slots = {}
-
--- Action bar shortcuts
-local shortcuts = {
-	actionBar1 = '1',
-	actionBar2 = '2',
-	actionBar3 = '3',
-	actionBar4 = '4',
-	actionBar5 = '5',
-	actionBar6 = '6',
-	actionBar7 = '7',
-	actionBar8 = '8',
-	actionBar9 = '9',
-	actionBar10 = '0'
-}
+plugin.panelColor = {0, 0, 0, 100}
+plugin.borderColor = {50, 50, 50, 255}
+plugin.activatedPanelColor = {100, 100, 100, 100}
+plugin.activatedBorderColor = {50, 50, 50, 255}
 
 -- Hooks
-function actionBar.initialise()
-	-- Initialise the slots so that they are empty
-	for i=1, numberOfSlots, 1 do table.insert(slots, -1) end
 
-	-- Hook up the controls
-	local controls = data.plugins.controls
-	if controls then
-		for slot, key in pairs(shortcuts) do controls.add(slot, key) end
-	end
+function plugin.initialise()
+	plugin.loadGame()
+	plugin.activatedSlot = 1
 end
 
-function actionBar.keyPressed()
+function plugin.loadGame()
+	pluginData = data.plugins.saveLoad.read('saves/actionBar.lua')
+end
+
+function plugin.saveGame()
+	data.plugins.saveLoad.write(pluginData, 'saves/actionBar.lua')
+end
+
+function plugin.keyPressed()
 	if data.state == 'game' then
 		local key = data.plugins.controls.currentKeyPressed
-		if shortcuts[key] then
-			activatedSlot = tonumber(string.match(key, 'actionBar(%d+)'))
+		for i, v in pairs(pluginData) do
+			if v.shortcutKey == key then
+				plugin.activatedSlot = i
+			end
 		end
 	end
 end
 
-function actionBar.saveGame()
-	local saveLoad = data.plugins.saveLoad
-	local file = saveLoad.saveFilePath..'actionBarSlots.txt'
-	saveLoad.writeTable(slots, file)
-end
+function plugin.newInventorySlot(hookData)
 
-function actionBar.loadGame()
-	local saveLoad = data.plugins.saveLoad
-	local file = saveLoad.saveFilePath..'actionBarSlots.txt'
-	slots = saveLoad.readArray(slots, file)
-end
+	-- Does any action bar slot currently reference this inventory slot?
 
--- Functions
-
-function actionBar.setSlotValue(actionBarSlot, value)
-	slots[tonumber(actionBarSlot)] = value
-end
-
-function actionBar.getSlotValue(actionBarSlot)
-	return slots[actionBarSlot]
-end
-
-function actionBar.getSlotIndex(value)
-	for i, v in pairs(slots) do
-		if v == value then
-			return i
+	local alreadyReferenced
+	for index, slot in ipairs(pluginData) do
+		if slot.inventorySlot == hookData.index then
+			alreadyReferenced = true
+			break
 		end
 	end
-end
 
-function actionBar.getSlotIndex(value)
-	for i, v in ipairs(slots) do
-		if v == value then
-			return i
+	-- If the inventory slot is not already referenced, find the next free action bar slot
+
+	local emptySlot
+	if not alreadyReferenced then
+		for index, slot in ipairs(pluginData) do
+			if slot.inventorySlot == 0 then
+				emptySlot = slot
+				break
+			end
 		end
 	end
-end
 
-function actionBar.isShortcut(key)
-	for shortcutKey, _ in pairs(shortcuts) do
-		if shortcutKey == key then return true end
-	end
-	return false
-end
+	-- If we found an empty slot, set it to reference the inventory slot
 
-function actionBar.getShortcutValue(index)
-	return shortcuts[index]
-end
-
-function actionBar.getShortcutIndex(value)
-	for i, v in shortcuts do
-		if v == value then
-			return i
-		end
+	if emptySlot then
+		emptySlot.inventorySlot = hookData.index
 	end
 end
 
-function actionBar.numberOfSlots()
-	return numberOfSlots
+-- Public functions
+
+function plugin.getPluginData()
+	return pluginData
 end
 
-function actionBar.activatedSlot()
-	return activatedSlot
-end
+function plugin.getItemData()
 
-function actionBar.clearValueFromSlots(value)
-	local found = {}
-	for i, v in ipairs(slots) do
-		if v == value then
-			table.insert(found, i)
-		end
+	local inventorySlotIndex
+	local inventorySlot
+	local item
+
+	-- Get the inventory slot of the currently activated action bar slot
+
+	local inventory = data.plugins.inventory
+	if inventory then
+		inventorySlotIndex = plugin.activatedSlot
+		inventorySlot = inventory.getPluginData()[plugin.activatedSlot]
 	end
-	for _, v in pairs(found) do
-		slots[v] = -1
+
+	-- Get the item in the inventory slot of the currently activated action bar slot
+
+	local items = data.plugins.items
+	if items and inventorySlot then
+		item = items.getPluginData()[inventorySlot.item]
+	end
+
+	if inventorySlotIndex and inventorySlot and item then
+		return {
+			inventorySlotIndex = inventorySlotIndex,
+			inventorySlot = inventorySlot,
+			item = item
+		}
 	end
 end
 
-function actionBar.nextEmptySlot()
-	for i, v in pairs(slots) do
-		if v < 0 then
-			return i
-		end
-	end
-end
-
-return actionBar
+return plugin

@@ -1,0 +1,20 @@
+local data = {}
+data['trigger1'] = {}
+data['trigger1']['x'] = 150
+data['trigger1']['y'] = 0
+data['trigger1']['width'] = 100
+data['trigger1']['height'] = 10
+data['trigger1']['onFire'] = 'playerHolding'
+data['trigger1']['triggerHook'] = 'trigger1'
+data['seed1'] = {}
+data['seed1']['x'] = 140
+data['seed1']['y'] = 100
+data['seed1']['width'] = 25
+data['seed1']['height'] = 25
+data['seed1']['onFire'] = 'itemPickup'
+data['seed1']['triggerHook'] = 'itemPickup'
+data['seed1']['data'] = {}
+data['seed1']['data']['entity'] = 'seed1'
+data['seed1']['data']['item'] = 'item_seed'
+data['seed1']['data']['trigger'] = 'seed1'
+return data

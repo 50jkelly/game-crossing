@@ -9,7 +9,17 @@ controls.keys = {
 	drop = 'r',
 	openInventory = 'i',
 	saveGame = 'z',
-	loadGame = 'l'
+	loadGame = 'l',
+	actionBar1 = '1',
+	actionBar2 = '2',
+	actionBar3 = '3',
+	actionBar4 = '4',
+	actionBar5 = '5',
+	actionBar6 = '6',
+	actionBar7 = '7',
+	actionBar8 = '8',
+	actionBar9 = '9',
+	actionBar10 = '0'
 }
 
 -- Hooks

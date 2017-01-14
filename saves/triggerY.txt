@@ -1,3 +1,0 @@
-trigger1, 200
-trigger2, 230
-trigger3, 260

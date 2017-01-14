@@ -1,10 +1,8 @@
-local saveLoad = {}
+local plugin = {}
 
-function saveLoad.initialise()
-	saveLoad.saveFilePath = 'saves/'
-end
+-- Hooks
 
-function saveLoad.keyPressed()
+function plugin.keyPressed()
 	local key = data.plugins.controls.currentKeyPressed
 	if key == 'saveGame' then
 		callHook('plugins', 'saveGame')
@@ -14,73 +12,40 @@ function saveLoad.keyPressed()
 	end
 end
 
-function saveLoad.fileExists(file)
-	local file = io.open(file, 'rb')
-	if file then file:close() end
-	return file ~= nil
+function plugin.read(location)
+	local file = io.open(location, 'r')
+	if not file then return end
+	io.input(file)
+	local contents = io.read('*all')
+	io.close(file)
+	return loadstring(contents)()
 end
 
-function saveLoad.writeTable(table, file)
-	f = io.open(file, 'w')
-	io.output(f)
-	for index, value in pairs(table) do
-		local noWrite =
-			type(value) == 'table' or
-			type(value) == 'function' or
-			index == 'sprite' or
-			index == 'cursor'
+function plugin.write(t, location)
+	local file = io.open(location, 'w')
+	io.output(file)
+	io.write('local data = {}\n')
+	io.write(printTable(t))
+	io.write('return data')
+	io.close(file)
+end
 
-		if noWrite == false then
-			io.write(index..', '..tostring(value)..'\n')
-		end
+-- Functions
+
+function printTable(t, p)
+	local prefix = p or 'data'
+	for i, v in pairs(t) do
+		if type(v) == 'table' then io.write(prefix..'[\''..i..'\'] = {}\n') end
 	end
-	io.close(f)
-end
-
-function saveLoad.readTable(table, file)
-	if not saveLoad.fileExists(file) then return false end
-	table = {}
-	for line in io.lines(file) do
-		local index, value = string.match(line, '(%w+), ([.%w%d_-]+)')
-
-		if index then
-			if string.match(value, '^[%d.]+$') then
-				value = tonumber(value)
-			end
-
-			if string.match(value, 'true') then
-				value = true
-			elseif string.match(value, 'false') then
-				value = false
-			end
-
-			table[index] = value
+	for i, v in pairs(t) do
+		local value = v
+		if type(v) == 'string' then value = '\''..value..'\'' end
+		if type(v) == 'boolean' then 
+			if v then value = 'true' else value = 'false' end
 		end
+		if type(v) == 'table' then value = printTable(v, prefix..'[\''..i..'\']') end
+		if value then io.write(prefix..'[\''..i..'\'] = '..value..'\n') end
 	end
-	return table
 end
 
-function saveLoad.readArray(array, file)
-	if not saveLoad.fileExists(file) then return false end
-	array = {}
-	for line in io.lines(file) do
-		local index, value = string.match(line, '(%w+), ([%w%d_]+)')
-
-		if index then
-			if string.match(value, '^[%d.]+$') then
-				value = tonumber(value)
-			end
-
-			if string.match(value, 'true') then
-				value = true
-			elseif string.match(value, 'false') then
-				value = false
-			end
-
-			array[tonumber(index)] = value
-		end
-	end
-	return array
-end
-
-return saveLoad
+return plugin

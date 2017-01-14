@@ -1,161 +1,127 @@
-local triggers = {}
-local triggerX = {}
-local triggerY = {}
-local triggerWidth = {}
-local triggerHeight = {}
-local triggerOnFire = {}
-local triggerOnStop = {}
-local triggerIdle = {}
-local triggerFiring = {}
+local plugin = {}
+local pluginData = {}
 local triggerFunctions = {}
-local triggerEntity = {}
-local count = 1
 
-function triggers.assetsLoaded()
-	triggerFunctions['item_pickup'] = function(triggerId)
-		local inventory = data.plugins.inventory
-		local items = data.plugins.items
-		local actionBar = data.plugins.actionBar
-		local staticEntities = data.plugins.staticEntities
+-- Hooks
 
-		if inventory and items and staticEntities then
-			local staticEntityId = triggerEntity[triggerId]
-			local itemId = staticEntities.getEntity(staticEntityId).itemId
-			local slot = inventory.findItem(itemId)
-			if slot then
-				inventory.slotQuantities[slot] = inventory.slotQuantities[slot] + 1
-			else
-				local newSlot = inventory.addItem(itemId, 1)
-				if actionBar then
-					local actionBarSlot = actionBar.getSlotIndex(newSlot)
-					if not actionBarSlot then
-						actionBarSlot = actionBar.nextEmptySlot()
-					end
-					if actionBarSlot then
-						actionBar.setSlotValue(actionBarSlot, newSlot)
-					end
-				end
-			end
-			staticEntities.remove(staticEntityId)
-			triggers.remove(triggerId)
-		end
-	end
-
-	callHook('plugins', 'triggersLoaded')
+function plugin.initialise()
+	plugin.loadGame()
 end
 
-function triggers.update()
+function plugin.loadGame()
+	pluginData = data.plugins.saveLoad.read('saves/triggers.lua')
+end
+
+function plugin.saveGame()
+	data.plugins.saveLoad.write(pluginData, 'saves/triggers.lua')
+end
+
+function plugin.update()
+
 	-- Fire triggers that are overlapping a dynamic entity
-	for _, entity in ipairs(data.dynamicEntities) do
-		for _, triggerId in ipairs(triggerIdle) do
-			if overlapping(entity, triggers.getRect(triggerId)) then
-				fire(triggerId)
+
+	local dynamicEntities = data.plugins.dynamicEntities
+	if dynamicEntities then
+		for entityIndex, entity in pairs(dynamicEntities.getPluginData()) do
+			for triggerIndex, trigger in pairs(pluginData) do
+				if overlapping(getRect(entity), getRect(trigger)) and not trigger.firing then
+					local triggerData
+					if trigger.onFire and triggerFunctions[trigger.onFire] then
+						triggerData = triggerFunctions[trigger.onFire](trigger)
+					end
+					callHook('plugins', trigger.triggerHook..'Fire', triggerData)
+					trigger.firing = true
+				end
 			end
 		end
 	end
 
 	-- Stop firing triggers that have no entities currently firing them
-	local stopped = {}
-	for index, triggerId in ipairs(triggerFiring) do
-		for _, entity in ipairs(data.dynamicEntities) do
-			if overlapping(entity, triggers.getRect(triggerId)) then
-				stop(triggerId)
-				break
+
+	if dynamicEntities then
+		for triggerIndex, trigger in pairs(pluginData) do
+			if trigger.firing then
+				local anyOverlapping = false
+				for entityIndex, entity in pairs(dynamicEntities.getPluginData()) do
+					if overlapping(getRect(entity), getRect(trigger)) then
+						anyOverlapping = true
+						break
+					end
+				end
+				if not anyOverlapping then
+					local triggerData
+					if trigger.onStop and triggerFunctions[trigger.onStop] then
+						triggerData = triggerFunctions[trigger.onStop](trigger)
+					end
+					callHook('plugins', trigger.triggerHook..'Stop', triggerData)
+					trigger.firing = false
+				end
 			end
 		end
 	end
 end
 
-function triggers.saveGame()
-	local saveLoad = data.plugins.saveLoad
-	saveLoad.writeTable(triggerX, saveLoad.saveFilePath..'triggerX.txt')
-	saveLoad.writeTable(triggerY, saveLoad.saveFilePath..'triggerY.txt')
-	saveLoad.writeTable(triggerWidth, saveLoad.saveFilePath..'triggerWidth.txt')
-	saveLoad.writeTable(triggerHeight, saveLoad.saveFilePath..'triggerHeight.txt')
-	saveLoad.writeTable(triggerOnFire, saveLoad.saveFilePath..'triggerOnFire.txt')
-	saveLoad.writeTable(triggerOnStop, saveLoad.saveFilePath..'triggerOnStop.txt')
-	saveLoad.writeTable(triggerIdle, saveLoad.saveFilePath..'triggerIdle.txt')
-	saveLoad.writeTable(triggerFiring, saveLoad.saveFilePath..'triggerFiring.txt')
-	saveLoad.writeTable(triggerEntity, saveLoad.saveFilePath..'triggerEntity.txt')
+function plugin.itemPickupFire(triggerData)
+	pluginData[triggerData.trigger] = nil
 end
 
-function triggers.loadGame()
-	local saveLoad = data.plugins.saveLoad
-	triggerX = saveLoad.readTable(triggerX, saveLoad.saveFilePath..'triggerX.txt')
-	triggerY = saveLoad.readTable(triggerY, saveLoad.saveFilePath..'triggerY.txt')
-	triggerWidth = saveLoad.readTable(triggerWidth, saveLoad.saveFilePath..'triggerWidth.txt')
-	triggerHeight = saveLoad.readTable(triggerHeight, saveLoad.saveFilePath..'triggerHeight.txt')
-	triggerOnFire = saveLoad.readTable(triggerOnFire, saveLoad.saveFilePath..'triggerOnFire.txt')
-	triggerOnStop = saveLoad.readTable(triggerOnStop, saveLoad.saveFilePath..'triggerOnStop.txt')
-	triggerIdle = saveLoad.readArray(triggerIdle, saveLoad.saveFilePath..'triggerIdle.txt')
-	triggerFiring = saveLoad.readArray(triggerFiring, saveLoad.saveFilePath..'triggerFiring.txt')
-	triggerEntity = saveLoad.readTable(triggerEntity, saveLoad.saveFilePath..'triggerEntity.txt')
-	count = table.getn(triggers.allTriggers()) + 1
-end
+function plugin.itemDrop(itemData)
 
-function triggers.getRect(triggerId)
-	return {
-		x = triggerX[triggerId],
-		y = triggerY[triggerId],
-		width = triggerWidth[triggerId],
-		height = triggerHeight[triggerId]
+	-- Add a new trigger for picking the item back up
+
+	pluginData[itemData.triggerId] = {
+		x = itemData.item.x,
+		y = itemData.item.y,
+		width = 25,
+		height = 25,
+		onFire = 'itemPickup',
+		triggerHook = 'itemPickup',
+		data = {
+			entity = itemData.staticEntityId,
+			item = itemData.inventorySlot.item,
+			trigger = itemData.triggerId
+		}
 	}
 end
 
-function fire(triggerId)
-	removeFromArray(triggerIdle, triggerId)
-	table.insert(triggerFiring, triggerId)
-	run(triggerOnFire, triggerId)
+-- Trigger functions
+
+function triggerFunctions.itemPickup(trigger)
+	return {
+		entity = trigger.data.entity,
+		item = trigger.data.item,
+		trigger = trigger.data.trigger
+	}
 end
 
-function stop(triggerId)
-	removeFromArray(triggerFiring, triggerId)
-	table.insert(triggerIdle, triggerId)
-	run(triggerOnStop, triggerId)
-end
-
-function run(funcTable, triggerId)
-	local funcId = funcTable[triggerId]
-	if funcId then
-		triggerFunctions[funcId](triggerId)
-	end
-end
-
-function triggers.newTrigger(x, y, width, height, onFireId, onStopId, entityId)
-	local id = 'trigger'..count
-	count = count + 1
-	triggerX[id] = x
-	triggerY[id] = y
-	triggerWidth[id] = width
-	triggerHeight[id] = height
-	if onFireId then triggerOnFire[id] = onFireId end
-	if onStopId then triggerOnStop[id] = onStopId end
-	if entityId then triggerEntity[id] = entityId end
-	table.insert(triggerIdle, id)
-end
-
-function removeFromArray(array, triggerId)
-	for index, value in ipairs(array) do
-		if value == triggerId then
-			table.remove(array, index)
-			return
+function triggerFunctions.playerHolding(trigger)
+	local actionBar = data.plugins.actionBar
+	if actionBar then
+		local itemData = actionBar.getItemData()
+		if itemData then
+			return {
+				amount = itemData.inventorySlot.amount,
+				name = itemData.item.name
+			}
 		end
 	end
 end
 
-function triggers.remove(id)
-	removeFromArray(triggerX, id)
-	removeFromArray(triggerY, id)
-	removeFromArray(triggerWidth, id)
-	removeFromArray(triggerHeight, id)
-	removeFromArray(triggerOnFire, id)
-	removeFromArray(triggerOnStop, id)
-	removeFromArray(triggerIdle, id)
-	removeFromArray(triggerFiring, id)
+-- Public functions
+
+function plugin.getPluginData()
+	return pluginData
 end
 
-function triggers.allTriggers()
-	return concat(triggerIdle, triggerFiring)
+-- Private functions
+
+function getRect(thing)
+	return {
+		x = thing.x,
+		y = thing.y,
+		width = thing.width,
+		height = thing.height
+	}
 end
 
-return triggers
+return plugin

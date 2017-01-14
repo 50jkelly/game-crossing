@@ -1,32 +1,29 @@
-local viewport = {
-	x = 0,
-	y = 0,
-	width = 0,
-	height = 0
-}
+local plugin = {}
+local pluginData = {}
 
-function viewport.initialise()
-	viewport.x = 0
-	viewport.y = 0
-	viewport.width = data.screenWidth
-	viewport.height = data.screenHeight
+function plugin.initialise()
+	pluginData.x = 0
+	pluginData.y = 0
+	pluginData.width = data.screenWidth
+	pluginData.height = data.screenHeight
 end
 
-function viewport.update()
-	local player = data.player
+function plugin.update()
+	local player = data.plugins.player
 	if player then
-		viewport.x = player.x - (viewport.width / 2) + player.width + player.drawXOffset
-		viewport.y = player.y - (viewport.height / 2) + player.height + player.drawYOffset
+		local pd = player.getPluginData()
+		pluginData.x = pd.x - (pluginData.width / 2) + pd.width + pd.drawXOffset
+		pluginData.y = pd.y - (pluginData.height / 2) + pd.height + pd.drawYOffset
 	end
 end
 
-function viewport.preDraw()
+function plugin.preDraw()
 	love.graphics.push()
-	love.graphics.translate(-viewport.x, -viewport.y)
+	love.graphics.translate(-pluginData.x, -pluginData.y)
 end
 
-function viewport.postDraw()
+function plugin.postDraw()
 	love.graphics.pop()
 end
 
-return viewport
+return plugin

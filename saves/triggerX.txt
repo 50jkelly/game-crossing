@@ -1,3 +1,0 @@
-trigger1, 100
-trigger2, 100
-trigger3, 100

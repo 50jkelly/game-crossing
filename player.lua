@@ -1,179 +1,177 @@
-local player = {}
+local plugin = {}
+local pluginData = {}
 
-local playerEntity = {
-	id = "player",
-	collides = true,
-	timeSinceLastFrame = 0,
-	spriteId = 'player_walk_down_1',
-	frameCounter = 1,
-	animationPrefix = "player",
-	framesPerSecond = 8,
-	upBlocked = false,
-	downBlocked = false,
-	leftBlocked = false,
-	rightBlocked = false,
-	speed = 100,
-	direction = "none",
-	state = "walk_down",
-	x = 100,
-	y = 100,
-	oldX = 100,
-	oldY = 100,
-	width = 20,
-	height = 10,
-	drawXOffset = 0,
-	drawYOffset = -16
-}
+-- Hooks
 
-function player.initialise()
-	player.messageBoxes = {}
-	data.player = playerEntity
-	table.insert(data.dynamicEntities, playerEntity)
+function plugin.dynamicEntitiesLoaded()
+	pluginData = data.plugins.dynamicEntities.getPluginData().player
 end
 
-function player.saveGame()
-	local file = data.plugins.saveLoad.saveFilePath .. 'playerEntity.txt'
-	data.plugins.saveLoad.writeTable(playerEntity, file)
-end
-
-function player.loadGame()
-	local file = data.plugins.saveLoad.saveFilePath .. 'playerEntity.txt'
-	playerEntity = data.plugins.saveLoad.readTable(playerEntity, file)
-end
-
-function player.keyDown()
+function plugin.keyDown()
 	local key = data.plugins.controls.currentKeyDown
-
 	if data.state == 'game' then
 		if key == "up" or key =="down" or key == "left" or key == "right" then
-			playerEntity.state = "walk_"..key
-			player.moved = true
+			pluginData.state = "walk_"..key
+			pluginData.moved = true
 		end
 	end
 end
 
-function player.keyPressed()
+function plugin.keyPressed()
+	
 	local key = data.plugins.controls.currentKeyPressed
-
 	if data.state == 'game' and key =='drop' then
+
+		-- Get the item data for the currently selected action bar slot
+
+		local itemData
 		local actionBar = data.plugins.actionBar
-		local inventory = data.plugins.inventory
-		local items = data.plugins.items
+		if actionBar then
+			itemData = actionBar.getItemData()
+		end
 
-		if actionBar and inventory and items then
-			local actionBarValue = actionBar.getSlotValue(actionBar.activatedSlot())
-			if actionBarValue > 0 then
-				local itemId = inventory.getItem(actionBarValue)
-				if itemId then
-					local x = playerEntity.x
-					local y = playerEntity.y
+		-- If an item was found, determine where it should be dropped based on player position
+		--  and direction
 
-					if playerEntity.state == 'walk_up' then
-						y = y - items.height - 2
-					end
+		if itemData then
+			local x = pluginData.x
+			local y = pluginData.y
 
-					if playerEntity.state == 'walk_down' then
-						y = y + playerEntity.height + 2
-					end
-
-					if playerEntity.state == 'walk_left' then
-						x = x - items.width - 2
-						y = y - 10
-					end
-
-					if playerEntity.state == 'walk_right' then
-						x = x + playerEntity.width + 2
-						y = y - 10
-					end
-
-					inventory.removeItem(actionBarValue)
-					items.addToWorld(itemId, x, y)
-				end
+			if pluginData.state == 'walk_up' then
+				y = y - 35
 			end
+
+			if pluginData.state == 'walk_down' then
+				y = y + pluginData.height + 5
+			end
+
+			if pluginData.state == 'walk_left' then
+				x = x - 30
+				y = y - 10
+			end
+
+			if pluginData.state == 'walk_right' then
+				x = x + pluginData.width + 5
+				y = y - 10
+			end
+
+			itemData.item.x = x
+			itemData.item.y = y
+		end
+
+		-- If an item was found, get a static entity and trigger id for it
+
+		if itemData then
+			local staticEntities = data.plugins.staticEntities
+			local triggers = data.plugins.triggers
+
+			if staticEntities then
+				itemData.staticEntityId = getNextFreeId(staticEntities.getPluginData(), 'item')
+			end
+
+			if triggers then
+				itemData.triggerId = getNextFreeId(triggers.getPluginData(), 'trigger')
+			end
+		end
+
+		-- If an item was found, call the appropriate hook
+
+		if itemData then
+			callHook('plugins', 'itemDrop', itemData)
 		end
 	end
 end
 
-function playerEntity.update()
+function plugin.update()
 	if data.state == 'game' then
-		playerEntity.oldX = playerEntity.x
-		playerEntity.oldY = playerEntity.y
+		pluginData.oldX = pluginData.x
+		pluginData.oldY = pluginData.y
 
-		if player.moved then
-			local moveDistance = playerEntity.speed * data.dt
-			if playerEntity.state == "walk_up" then
-				if not isBlockedState(playerEntity.state) then
+		if pluginData.moved then
+			local moveDistance = pluginData.speed * data.dt
+			if pluginData.state == "walk_up" then
+				if not isBlockedState(pluginData.state) then
 					clearBlockedStates()
-					playerEntity.y = playerEntity.y - moveDistance
+					pluginData.y = pluginData.y - moveDistance
 				else
-					player.colliding = true
+					pluginData.colliding = true
 				end
 			end
-			if playerEntity.state == "walk_down" then
-				if not isBlockedState(playerEntity.state) then
+			if pluginData.state == "walk_down" then
+				if not isBlockedState(pluginData.state) then
 					clearBlockedStates()
-					playerEntity.y = playerEntity.y + moveDistance
+					pluginData.y = pluginData.y + moveDistance
 				else
-					player.colliding = true
+					pluginData.colliding = true
 				end
 			end
-			if playerEntity.state == "walk_left" then
-				if not isBlockedState(playerEntity.state) then
+			if pluginData.state == "walk_left" then
+				if not isBlockedState(pluginData.state) then
 					clearBlockedStates()
-					playerEntity.x = playerEntity.x - moveDistance
+					pluginData.x = pluginData.x - moveDistance
 				else
-					player.colliding = true
+					pluginData.colliding = true
 				end
 			end
-			if playerEntity.state == "walk_right" then
-				if not isBlockedState(playerEntity.state) then
+			if pluginData.state == "walk_right" then
+				if not isBlockedState(pluginData.state) then
 					clearBlockedStates()
-					playerEntity.x = playerEntity.x + moveDistance
+					pluginData.x = pluginData.x + moveDistance
 				else
-					player.colliding = true
+					pluginData.colliding = true
 				end
 			end
 		end
 
-		if player.moved and player.colliding == false then
-			playerEntity.cycleAnimation = true
+		if pluginData.moved and pluginData.colliding == false then
+			pluginData.cycleAnimation = true
 		end
 
-		if player.colliding then
-			playerEntity.resetAnimation = true
+		if pluginData.colliding then
+			pluginData.resetAnimation = true
 		end
 
-		player.moved = false
-		player.colliding = false
+		pluginData.moved = false
+		pluginData.colliding = false
 	end
 end
 
-function playerEntity.collision(otherItem)
-	setBlockedState(playerEntity.state)
-	playerEntity.x = playerEntity.oldX
-	playerEntity.y = playerEntity.oldY
+function plugin.collision()
+	if pluginData.colliding then
+		setBlockedState(pluginData.state)
+		pluginData.x = pluginData.oldX
+		pluginData.y = pluginData.oldY
+	end
 end
+
+-- Public functions
+
+function plugin.getPluginData()
+	return pluginData
+end
+
+-- Private functions
 
 function clearBlockedStates()
-	playerEntity.upBlocked = false
-	playerEntity.downBlocked = false
-	playerEntity.leftBlocked = false
-	playerEntity.rightBlocked = false
+	pluginData.upBlocked = false
+	pluginData.downBlocked = false
+	pluginData.leftBlocked = false
+	pluginData.rightBlocked = false
 end
 
 function setBlockedState(state)
-	if state == 'walk_up' then playerEntity.upBlocked = true end
-	if state == 'walk_down' then playerEntity.downBlocked = true end
-	if state == 'walk_left' then playerEntity.leftBlocked = true end
-	if state == 'walk_right' then playerEntity.rightBlocked = true end
+	if state == 'walk_up' then pluginData.upBlocked = true end
+	if state == 'walk_down' then pluginData.downBlocked = true end
+	if state == 'walk_left' then pluginData.leftBlocked = true end
+	if state == 'walk_right' then pluginData.rightBlocked = true end
 end
 
 function isBlockedState(state)
 	return
-		state == 'walk_up' and playerEntity.upBlocked or
-		state == 'walk_down' and playerEntity.downBlocked or
-		state == 'walk_left' and playerEntity.leftBlocked or
-		state == 'walk_right' and playerEntity.rightBlocked
+		state == 'walk_up' and pluginData.upBlocked or
+		state == 'walk_down' and pluginData.downBlocked or
+		state == 'walk_left' and pluginData.leftBlocked or
+		state == 'walk_right' and pluginData.rightBlocked
 end
 
-return player
+return plugin
