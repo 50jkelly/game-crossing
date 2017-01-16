@@ -1,5 +1,6 @@
 local plugin = {}
 local pluginData = {}
+local numberOfSlots = 10
 
 -- Colors
 plugin.panelColor = {0, 0, 0, 100}
@@ -11,7 +12,7 @@ plugin.activatedBorderColor = {50, 50, 50, 255}
 
 function plugin.initialise()
 	plugin.loadGame()
-	plugin.activatedSlot = 1
+	plugin.activatedSlot = '1'
 end
 
 function plugin.loadGame()
@@ -38,7 +39,7 @@ function plugin.newInventorySlot(hookData)
 	-- Does any action bar slot currently reference this inventory slot?
 
 	local alreadyReferenced
-	for index, slot in ipairs(pluginData) do
+	for index, slot in pairs(pluginData) do
 		if slot.inventorySlot == hookData.index then
 			alreadyReferenced = true
 			break
@@ -49,7 +50,9 @@ function plugin.newInventorySlot(hookData)
 
 	local emptySlot
 	if not alreadyReferenced then
-		for index, slot in ipairs(pluginData) do
+		for i = 1, numberOfSlots, 1 do
+			local index = tostring(i)
+			local slot = pluginData[index]
 			if slot.inventorySlot == 0 then
 				emptySlot = slot
 				break

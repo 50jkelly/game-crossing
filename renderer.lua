@@ -1,8 +1,16 @@
 local renderer = {}
-renderer.drawWorldPosition = true
-renderer.drawTriggers = true
+renderer.drawWorldPosition = false
+renderer.drawTriggers = false
 
 function renderer.draw()
+
+	local screenWidth = data.screenWidth
+	local screenHeight = data.screenHeight
+	local viewport = data.plugins.viewport
+	if viewport then
+		screenWidth = viewport.getPluginData().width
+		screenHeight = viewport.getPluginData().height
+	end
 
 	-- Merge static and dynamic entity tables into a single array
 
@@ -37,8 +45,10 @@ function renderer.draw()
 		if sprites then
 			local sprite = sprites.getSprite(entity.spriteId)
 			if sprite then
-				local drawX = entity.x + entity.drawXOffset
-				local drawY = entity.y + entity.drawYOffset
+				local xOffset = entity.drawXOffset or 0
+				local yOffset = entity.drawYOffset or 0
+				local drawX = entity.x + xOffset
+				local drawY = entity.y + yOffset
 				local scale = entity.scale or 1
 				love.graphics.draw(sprite, drawX, drawY, 0, scale, scale, 0, 0)
 			end
@@ -71,6 +81,14 @@ end
 
 function renderer.drawUI()
 
+	local screenWidth = data.screenWidth
+	local screenHeight = data.screenHeight
+	local viewport = data.plugins.viewport
+	if viewport then
+		screenWidth = viewport.getPluginData().width
+		screenHeight = viewport.getPluginData().height
+	end
+
 	-- Draw message boxes
 
 	local messageBox = data.plugins.messageBox
@@ -95,16 +113,19 @@ function renderer.drawUI()
 	local actionBar = data.plugins.actionBar
 	if actionBar then
 		local slots = actionBar.getPluginData()
-		local numberOfSlots = table.getn(slots)
+		local numberOfSlots = 10
 		local margin = 10
 		local width = 50
 		local height = 50
 		local totalWidth = (numberOfSlots * width) + (numberOfSlots * margin) + margin
-		local x = (data.screenWidth - totalWidth) / 2
-		local y = data.screenHeight - height - margin
-		local startX = x
+		local startX = (screenWidth - totalWidth) / 2
+		local y = screenHeight - height - margin
 
 		for i, slot in pairs(slots) do
+
+			-- Determine where to draw this slot based on its index
+
+			local x = startX + ((width + margin) * (i - 1))
 
 			-- Get all the data needed to draw this panel
 
@@ -115,7 +136,7 @@ function renderer.drawUI()
 
 			local inventorySlot
 			if inventory then
-				inventorySlot = inventory.getPluginData()[slot.inventorySlot]
+				inventorySlot = inventory.getPluginData()[tostring(slot.inventorySlot)]
 			end
 
 			local item
@@ -184,23 +205,27 @@ function renderer.drawUI()
 				local textColor = data.plugins.messageBox.textColor
 				local lineHeight = 20
 				local panelWidth = 300
-				local panelHeight = table.getn(slots) * lineHeight
-				local panelX = (data.screenWidth - panelWidth) / 2
-				local panelY = (data.screenHeight - panelHeight) / 2
+				local panelHeight = lineHeight * 15
+				local panelX = (screenWidth - panelWidth) / 2
+				local panelY = (screenHeight - panelHeight) / 2
 				local textYMargin = 8
 				local x = panelX + margin
-				local y = panelY + margin
+				local startY = panelY + margin
 				local startX = x
-				local startY = y
 
 				drawPanel(panelX, panelY, panelWidth, panelHeight, backgroundColor, borderColor)
 
 			-- Print the items in the player's inventory
 
-				for index, slot in ipairs(slots) do
+				for index, slot in pairs(slots) do
+
+					-- Determine the correct y position based on the slot's index
+
+					local y = startY + ((lineHeight + margin) * (index - 1))
 
 					-- Draw the cursor
-					if inventory.highlightedSlot == index then
+
+					if inventory.highlightedSlot == tonumber(index) then
 						love.graphics.draw(inventory.cursor, x, y)
 					end
 
@@ -212,7 +237,7 @@ function renderer.drawUI()
 						local actionBar = data.plugins.actionBar
 						if actionBar then
 							for i, actionBarSlot in pairs(actionBar.getPluginData()) do
-								if actionBarSlot.inventorySlot == index then
+								if tonumber(actionBarSlot.inventorySlot) == tonumber(index) then
 									local shortcutLabel = actionBarSlot.shortcutKey
 									local controls = data.plugins.controls
 									if controls then

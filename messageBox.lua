@@ -26,4 +26,18 @@ function plugin.trigger1Stop(item)
 	plugin.messageBoxes = {}
 end
 
+function plugin.overlappingPlantFire(triggerData)
+	table.insert(plugin.messageBoxes, {
+		x = 10,
+		y = 10,
+		width = data.screenWidth - 20,
+		height = 30,
+		text = triggerData.plantName
+	})
+end
+
+function plugin.overlappingPlantStop()
+	plugin.messageBoxes = {}
+end
+
 return plugin

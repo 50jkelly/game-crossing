@@ -10,6 +10,7 @@ end
 
 function plugin.loadGame()
 	pluginData = data.plugins.saveLoad.read('saves/triggers.lua')
+	callHook('plugins', 'triggersLoaded', pluginData)
 end
 
 function plugin.saveGame()
@@ -28,6 +29,8 @@ function plugin.update()
 					local triggerData
 					if trigger.onFire and triggerFunctions[trigger.onFire] then
 						triggerData = triggerFunctions[trigger.onFire](trigger)
+					else
+						triggerData = trigger.data
 					end
 					callHook('plugins', trigger.triggerHook..'Fire', triggerData)
 					trigger.firing = true

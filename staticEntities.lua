@@ -9,6 +9,7 @@ end
 
 function plugin.loadGame()
 	pluginData = data.plugins.saveLoad.read('saves/staticEntities.lua')
+	callHook('plugins', 'staticEntitiesLoaded', pluginData)
 end
 
 function plugin.saveGame()

@@ -1,5 +1,6 @@
 local plugin = {}
 local pluginData = {}
+local numberOfSlots = 10
 
 -- Hooks
 
@@ -31,21 +32,30 @@ function plugin.keyPressed()
 		end
 
 		if key == 'down' and plugin.highlightedSlot then 
-			if plugin.highlightedSlot < table.getn(pluginData) then
+			if plugin.highlightedSlot < numberOfSlots then
 				plugin.highlightedSlot = plugin.highlightedSlot + 1
 			end
 		end
 
+		-- Check if the key is an action bar shortcut key
+
 		local actionBar = data.plugins.actionBar
 		if actionBar and string.match(key, 'actionBar') then
+			for i, actionBarSlot in pairs(actionBar.getPluginData()) do
+				local shortcutKey = actionBarSlot.shortcutKey
+				local inventorySlot = actionBarSlot.inventorySlot
 
-			-- Check if the key is an action bar shortcut key
-			local actionBarSlot
-			for i, v in pairs(actionBar.getPluginData()) do
-				if key == v.shortcutKey then
-					v.inventorySlot = plugin.highlightedSlot
-				elseif v.inventorySlot == plugin.highlightedSlot then
-					v.inventorySlot = 0
+				-- If the current slot is the slot referenced by the key pressed,
+				-- set its inventory slot to the highlighted inventory slot
+				if shortcutKey == key then
+					actionBar.getPluginData()[i].inventorySlot = tostring(plugin.highlightedSlot)
+				end
+
+				-- If the current slot is not the slot referenced by the key pressed,
+				-- and it referecnes the currently highlighted inventory slot, reset
+				-- it's inventory slot reference
+				if shortcutKey ~= key and inventorySlot == tostring(plugin.highlightedSlot) then
+					actionBar.getPluginData()[i].inventorySlot = '0'
 				end
 			end
 		end
@@ -65,7 +75,7 @@ function plugin.itemPickupFire(triggerData)
 	-- Are there instances of the picked up item in the inventory?
 
 	local inInventory
-	for index, slot in ipairs(pluginData) do
+	for index, slot in pairs(pluginData) do
 		if triggerData.item == slot.item then
 			inInventory = slot
 			break
@@ -82,7 +92,9 @@ function plugin.itemPickupFire(triggerData)
 
 	local emptySlot
 	if not inInventory then
-		for index, slot in ipairs(pluginData) do
+		for i = 1, numberOfSlots, 1 do
+			local index = tostring(i)
+			local slot = pluginData[index]
 			if slot.item == 'empty' then
 				emptySlot = {
 					slot = slot,

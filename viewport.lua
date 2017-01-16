@@ -1,11 +1,13 @@
 local plugin = {}
 local pluginData = {}
 
+-- Hooks
+
 function plugin.initialise()
 	pluginData.x = 0
 	pluginData.y = 0
-	pluginData.width = data.screenWidth
-	pluginData.height = data.screenHeight
+	pluginData.width = 800
+	pluginData.height = 600
 end
 
 function plugin.update()
@@ -24,6 +26,17 @@ end
 
 function plugin.postDraw()
 	love.graphics.pop()
+end
+
+function love.resize(width, height)
+	pluginData.width = width
+	pluginData.height = height
+end
+
+-- Functions
+
+function plugin.getPluginData()
+	return pluginData
 end
 
 return plugin

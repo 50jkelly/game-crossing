@@ -24,7 +24,8 @@ data.plugins = {
 	inventory = require "inventory",
 	actionBar = require 'actionBar',
 	items = require "items",
-	trees = require "trees"
+	trees = require "trees",
+	plants = require 'plants'
 }
 
 function love.load()
