@@ -32,7 +32,8 @@ end
 
 -- Functions
 
-function printTable(t, p)
+function printTable(table, p)
+	local t = table or {}
 	local prefix = p or 'data'
 	for i, v in pairs(t) do
 		if type(v) == 'table' then io.write(prefix..'[\''..i..'\'] = {}\n') end

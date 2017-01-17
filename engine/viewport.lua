@@ -11,9 +11,9 @@ function plugin.initialise()
 end
 
 function plugin.update()
-	local player = data.plugins.player
-	if player then
-		local pd = player.getPluginData()
+	local things = data.plugins.things
+	if things then
+		local pd = things.getThing('player')
 		pluginData.x = pd.x - (pluginData.width / 2) + pd.width + pd.drawXOffset
 		pluginData.y = pd.y - (pluginData.height / 2) + pd.height + pd.drawYOffset
 	end

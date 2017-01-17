@@ -3,17 +3,13 @@ local pluginData = {}
 
 -- Hooks
 
-function plugin.dynamicEntitiesLoaded()
-	pluginData = data.plugins.dynamicEntities.getPluginData().player
-end
-
 function plugin.keyDown()
 	local key = data.plugins.controls.currentKeyDown
-	if data.state == 'game' then
-		if key == "up" or key =="down" or key == "left" or key == "right" then
-			pluginData.state = "walk_"..key
-			pluginData.moved = true
-		end
+	local things = data.plugins.things
+	local isMovementKey = key == 'up' or key == 'down' or key == 'left' or key == 'right'
+	if data.state == 'game' and things and isMovementKey then
+		things.setProperty('player', 'moveState', 'move_'..key)
+		things.setProperty('player', 'animationState', 'move_'..key)
 	end
 end
 
@@ -84,45 +80,6 @@ end
 
 function plugin.update()
 	if data.state == 'game' then
-		pluginData.oldX = pluginData.x
-		pluginData.oldY = pluginData.y
-
-		if pluginData.moved then
-			local moveDistance = pluginData.speed * data.dt
-			if pluginData.state == "walk_up" then
-				if not isBlockedState(pluginData.state) then
-					clearBlockedStates()
-					pluginData.y = pluginData.y - moveDistance
-				else
-					pluginData.colliding = true
-				end
-			end
-			if pluginData.state == "walk_down" then
-				if not isBlockedState(pluginData.state) then
-					clearBlockedStates()
-					pluginData.y = pluginData.y + moveDistance
-				else
-					pluginData.colliding = true
-				end
-			end
-			if pluginData.state == "walk_left" then
-				if not isBlockedState(pluginData.state) then
-					clearBlockedStates()
-					pluginData.x = pluginData.x - moveDistance
-				else
-					pluginData.colliding = true
-				end
-			end
-			if pluginData.state == "walk_right" then
-				if not isBlockedState(pluginData.state) then
-					clearBlockedStates()
-					pluginData.x = pluginData.x + moveDistance
-				else
-					pluginData.colliding = true
-				end
-			end
-		end
-
 		if pluginData.moved and pluginData.colliding == false then
 			pluginData.cycleAnimation = true
 		end
@@ -130,17 +87,6 @@ function plugin.update()
 		if pluginData.colliding then
 			pluginData.resetAnimation = true
 		end
-
-		pluginData.moved = false
-		pluginData.colliding = false
-	end
-end
-
-function plugin.collision()
-	if pluginData.colliding then
-		setBlockedState(pluginData.state)
-		pluginData.x = pluginData.oldX
-		pluginData.y = pluginData.oldY
 	end
 end
 
@@ -151,27 +97,5 @@ function plugin.getPluginData()
 end
 
 -- Private functions
-
-function clearBlockedStates()
-	pluginData.upBlocked = false
-	pluginData.downBlocked = false
-	pluginData.leftBlocked = false
-	pluginData.rightBlocked = false
-end
-
-function setBlockedState(state)
-	if state == 'walk_up' then pluginData.upBlocked = true end
-	if state == 'walk_down' then pluginData.downBlocked = true end
-	if state == 'walk_left' then pluginData.leftBlocked = true end
-	if state == 'walk_right' then pluginData.rightBlocked = true end
-end
-
-function isBlockedState(state)
-	return
-		state == 'walk_up' and pluginData.upBlocked or
-		state == 'walk_down' and pluginData.downBlocked or
-		state == 'walk_left' and pluginData.leftBlocked or
-		state == 'walk_right' and pluginData.rightBlocked
-end
 
 return plugin

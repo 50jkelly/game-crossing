@@ -5,11 +5,11 @@ local playerOverlapping
 -- Hooks
 
 function plugin.loadGame()
-	pluginData = data.plugins.saveLoad.read('saves/plants.lua')
+	pluginData = data.plugins.persistence.read('saves/plants.lua')
 end
 
 function plugin.saveGame()
-	data.plugins.saveLoad.write(pluginData, 'saves/plants.lua')
+	data.plugins.persistence.write(pluginData, 'saves/plants.lua')
 end
 
 function plugin.staticEntitiesLoaded(staticEntities)

@@ -10,11 +10,11 @@ function plugin.initialise()
 end
 
 function plugin.loadGame()
-	pluginData = data.plugins.saveLoad.read('saves/inventory.lua')
+	pluginData = data.plugins.persistence.read('saves/inventory.lua')
 end
 
 function plugin.saveGame()
-	data.plugins.saveLoad.write(pluginData, 'saves/inventory.lua')
+	data.plugins.persistence.write(pluginData, 'saves/inventory.lua')
 end
 
 function plugin.loadGraphics()

@@ -16,11 +16,11 @@ function plugin.initialise()
 end
 
 function plugin.loadGame()
-	pluginData = data.plugins.saveLoad.read('saves/actionBar.lua')
+	pluginData = data.plugins.persistence.read('saves/actionBar.lua')
 end
 
 function plugin.saveGame()
-	data.plugins.saveLoad.write(pluginData, 'saves/actionBar.lua')
+	data.plugins.persistence.write(pluginData, 'saves/actionBar.lua')
 end
 
 function plugin.keyPressed()

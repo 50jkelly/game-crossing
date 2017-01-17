@@ -12,44 +12,32 @@ function renderer.draw()
 		screenHeight = viewport.getPluginData().height
 	end
 
-	-- Merge static and dynamic entity tables into a single array
+	-- Convert things table into an array for sorting
 
-	local entities = {}
-	local staticEntities = data.plugins.staticEntities
-	local dynamicEntities = data.plugins.dynamicEntities
-
-	if staticEntities then
-		for i, v in pairs(staticEntities.getPluginData()) do
-			v.id = i
-			table.insert(entities, v)
-		end
-	end
-
-	if dynamicEntities then
-		for i, v in pairs(dynamicEntities.getPluginData()) do
-			v.id = i
-			table.insert(entities, v)
-		end
+	local thingsArray
+	local things = data.plugins.things
+	if things then
+		thingsArray = things.toArray()
 	end
 	
-	-- Sort the entities array according to y position
+	-- Sort things array according to y position
 
-	table.sort(entities, function(a, b)
+	table.sort(thingsArray, function(a, b)
 		return a.y < b.y
 	end)
 
-	-- Draw each entity
+	-- Draw each thing
 
-	for _, entity in ipairs(entities) do
+	for _, thing in ipairs(thingsArray) do
 		local sprites = data.plugins.sprites
 		if sprites then
-			local sprite = sprites.getSprite(entity.spriteId)
+			local sprite = sprites.getSprite(thing.spriteId)
 			if sprite then
-				local xOffset = entity.drawXOffset or 0
-				local yOffset = entity.drawYOffset or 0
-				local drawX = entity.x + xOffset
-				local drawY = entity.y + yOffset
-				local scale = entity.scale or 1
+				local xOffset = thing.drawXOffset or 0
+				local yOffset = thing.drawYOffset or 0
+				local drawX = thing.x + xOffset
+				local drawY = thing.y + yOffset
+				local scale = thing.scale or 1
 				love.graphics.draw(sprite, drawX, drawY, 0, scale, scale, 0, 0)
 			end
 		end
@@ -57,12 +45,12 @@ function renderer.draw()
 		-- Draw the world position
 
 		if renderer.drawWorldPosition then
-			if entity.collides then
+			if thing.collides then
 				love.graphics.setColor(255, 0, 0, 100)
 			else
 				love.graphics.setColor(0, 255, 0, 100)
 			end
-			love.graphics.rectangle("fill", entity.x, entity.y, entity.width, entity.height)
+			love.graphics.rectangle("fill", thing.x, thing.y, thing.width, thing.height)
 			love.graphics.setColor(255,255,255,255)
 		end
 	end

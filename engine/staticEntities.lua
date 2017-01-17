@@ -8,12 +8,12 @@ function plugin.initialise()
 end
 
 function plugin.loadGame()
-	pluginData = data.plugins.saveLoad.read('saves/staticEntities.lua')
+	pluginData = data.plugins.persistence.read('saves/staticEntities.lua')
 	callHook('plugins', 'staticEntitiesLoaded', pluginData)
 end
 
 function plugin.saveGame()
-	data.plugins.saveLoad.write(pluginData, 'saves/staticEntities.lua')
+	data.plugins.persistence.write(pluginData, 'saves/staticEntities.lua')
 end
 
 function plugin.itemPickupFire(triggerData)

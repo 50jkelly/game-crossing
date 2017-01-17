@@ -9,46 +9,36 @@ data = {
 
 -- Plugins
 data.plugins = {
-	saveLoad = require 'saveLoad',
-	viewport = require "viewport",
-	sprites = require 'sprites',
-	renderer = require "renderer",
-	controls = require "controls",
-	collision = require "collision",
-	animation = require "animation",
-	staticEntities = require 'staticEntities',
-	dynamicEntities = require 'dynamicEntities',
-	player = require "player",
-	triggers = require "triggers",
-	messageBox = require "messageBox",
-	inventory = require "inventory",
-	actionBar = require 'actionBar',
-	items = require "items",
-	trees = require "trees",
+	persistence = require 'engine.persistence',
+	viewport = require 'engine.viewport',
+	sprites = require 'engine.sprites',
+	renderer = require 'engine.renderer',
+	controls = require 'engine.controls',
+	collision = require "engine.collision",
+	animation = require 'engine.animation',
+	things = require 'engine.things',
+	triggers = require 'engine.triggers',
+	messageBox = require 'engine.messageBox',
+	inventory = require 'engine.inventory',
+	actionBar = require 'engine.actionBar',
+	player = require 'player',
+	items = require 'items',
+	trees = require 'trees',
 	plants = require 'plants'
 }
 
 function love.load()
 	callHook('plugins', 'initialise')
-	callHook('staticEntities', 'initialise')
-	callHook('dynamicEntities', 'initialise')
 	callHook('plugins', 'loadGraphics')
-	callHook('staticEntities', 'loadGraphics')
-	callHook('dynamicEntities', 'loadGraphics')
 	callHook('plugins', 'assetsLoaded')
 end
 
 function love.update(dt)
-	data.dt = dt
-	callHook('plugins', 'update')
-	callHook('staticEntities', 'update')
-	callHook('dynamicEntities', 'update')
+	callHook('plugins', 'update', dt)
 end
 
 function love.draw()
-	-- Set background colour
 	love.graphics.setBackgroundColor(140, 225, 120)
-
 	callHook('plugins', 'preDraw')
 	callHook('plugins', 'draw')
 	callHook('plugins', 'postDraw')
@@ -61,13 +51,6 @@ function callHook(collection, method, hookData)
 			value[method](hookData)
 		end
 	end
-end
-
-function overlapping(rect1, rect2)
-	return not (rect1.x + rect1.width < rect2.x
-		or rect2.x + rect2.width < rect1.x
-		or rect1.y + rect1.height < rect2.y
-		or rect2.y + rect2.height < rect1.y)
 end
 
 function merge(table1, table2)
@@ -89,4 +72,12 @@ function getNextFreeId(data, prefix)
 		end
 		id = id + 1
 	end
+end
+
+function overlapping(rect1, rect2, margin)
+	local m = margin or 0
+	return not (rect1.x + rect1.width + m < rect2.x
+		or rect2.x + rect2.width + m < rect1.x
+		or rect1.y + rect1.height + m < rect2.y
+		or rect2.y + rect2.height + m < rect1.y)
 end

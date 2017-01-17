@@ -8,11 +8,11 @@ function plugin.initialise()
 end
 
 function plugin.loadGame()
-	pluginData = data.plugins.saveLoad.read('saves/items.lua')
+	pluginData = data.plugins.persistence.read('saves/items.lua')
 end
 
 function plugin.saveGame()
-	data.plugins.saveLoad.write(pluginData, 'saves/items.lua')
+	data.plugins.persistence.write(pluginData, 'saves/items.lua')
 end
 
 -- Public functions
