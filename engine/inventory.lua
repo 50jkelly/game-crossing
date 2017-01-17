@@ -1,65 +1,59 @@
-local plugin = {}
-local pluginData = {}
-local numberOfSlots = 10
+local inventory = {}
+local inventoryData = {}
 
 -- Hooks
 
-function plugin.initialise()
-	plugin.loadGame()
-	plugin.highlightedSlot = 1
+function inventory.initialise()
+	inventory.loadGame()
+
+	-- Determine the number of slots
+
+	inventory.numberOfSlots = 0
+	for _, _ in pairs(inventoryData) do
+		inventory.numberOfSlots = inventory.numberOfSlots + 1
+	end
+
+	-- Set the initially highlighted slot
+
+	inventory.highlightedSlot = 1
 end
 
-function plugin.loadGame()
-	pluginData = data.plugins.persistence.read('saves/inventory.lua')
+function inventory.loadGame()
+	inventoryData = data.plugins.persistence.read('saves/inventory.lua')
 end
 
-function plugin.saveGame()
+function inventory.saveGame()
 	data.plugins.persistence.write(pluginData, 'saves/inventory.lua')
 end
 
-function plugin.loadGraphics()
-	plugin.cursor = love.graphics.newImage('images/cursor.png')
-end
+function inventory.keyPressed()
+	local key = data.plugins.keyboard.currentKeyPressed
 
-function plugin.keyPressed()
-	local key = data.plugins.controls.currentKeyPressed
+	-- Change the highlighted slot in response to keyboard input
 
 	if data.state == 'inventory' then
-		if key == 'up' and plugin.highlightedSlot then
-			if plugin.highlightedSlot > 1 then
-				plugin.highlightedSlot = plugin.highlightedSlot - 1
+		if key == 'up' and inventory.highlightedSlot then
+			if inventory.highlightedSlot > 1 then
+				inventory.highlightedSlot = inventory.highlightedSlot - 1
 			end
 		end
 
-		if key == 'down' and plugin.highlightedSlot then 
-			if plugin.highlightedSlot < numberOfSlots then
-				plugin.highlightedSlot = plugin.highlightedSlot + 1
-			end
-		end
-
-		-- Check if the key is an action bar shortcut key
-
-		local actionBar = data.plugins.actionBar
-		if actionBar and string.match(key, 'actionBar') then
-			for i, actionBarSlot in pairs(actionBar.getPluginData()) do
-				local shortcutKey = actionBarSlot.shortcutKey
-				local inventorySlot = actionBarSlot.inventorySlot
-
-				-- If the current slot is the slot referenced by the key pressed,
-				-- set its inventory slot to the highlighted inventory slot
-				if shortcutKey == key then
-					actionBar.getPluginData()[i].inventorySlot = tostring(plugin.highlightedSlot)
-				end
-
-				-- If the current slot is not the slot referenced by the key pressed,
-				-- and it referecnes the currently highlighted inventory slot, reset
-				-- it's inventory slot reference
-				if shortcutKey ~= key and inventorySlot == tostring(plugin.highlightedSlot) then
-					actionBar.getPluginData()[i].inventorySlot = '0'
-				end
+		if key == 'down' and inventory.highlightedSlot then 
+			if inventory.highlightedSlot < inventory.numberOfSlots then
+				inventory.highlightedSlot = inventory.highlightedSlot + 1
 			end
 		end
 	end
+
+	if data.state == 'game' and string.match(key, 'actionBar') then
+		for i, slot in pairs(inventoryData) do
+			if slot.shortcut == key then
+				inventory.highlightedSlot = tonumber(i)
+			end
+		end
+	end
+
+	-- Change the game state in response to keyboard input
 
 	if key == 'openInventory' then
 		if data.state == 'game' then
@@ -70,13 +64,13 @@ function plugin.keyPressed()
 	end
 end
 
-function plugin.itemPickupFire(triggerData)
+function inventory.addItem(item)
 
 	-- Are there instances of the picked up item in the inventory?
 
 	local inInventory
-	for index, slot in pairs(pluginData) do
-		if triggerData.item == slot.item then
+	for index, slot in pairs(inventoryData) do
+		if item == slot.item then
 			inInventory = slot
 			break
 		end
@@ -92,9 +86,9 @@ function plugin.itemPickupFire(triggerData)
 
 	local emptySlot
 	if not inInventory then
-		for i = 1, numberOfSlots, 1 do
+		for i = 1, inventory.numberOfSlots, 1 do
 			local index = tostring(i)
-			local slot = pluginData[index]
+			local slot = inventoryData[index]
 			if slot.item == 'empty' then
 				emptySlot = {
 					slot = slot,
@@ -110,13 +104,12 @@ function plugin.itemPickupFire(triggerData)
 	if emptySlot then
 		emptySlot.slot.item = triggerData.item
 		emptySlot.slot.amount = 1
-		callHook('plugins', 'newInventorySlot', emptySlot)
 	end
 
 	-- Otherwise, display an inventory full message TODO
 end
 
-function plugin.itemDrop(itemData)
+function inventory.removeItem(itemData)
 	
 	-- Subtract 1 from the amount of the dropped item
 
@@ -129,10 +122,8 @@ function plugin.itemDrop(itemData)
 	end
 end
 
--- Public functions
-
-function plugin.getPluginData()
-	return pluginData
+function inventory.getSlots()
+	return inventoryData
 end
 
-return plugin
+return inventory

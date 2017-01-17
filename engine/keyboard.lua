@@ -1,6 +1,6 @@
-local controls = {}
+local keyboard = {}
 
-controls.keys = {
+keyboard.keys = {
 	up = "w",
 	down = "s",
 	left= "a",
@@ -24,10 +24,10 @@ controls.keys = {
 
 -- Hooks
 
-function controls.update()
-	for key, _ in pairs(controls.keys) do
-		if love.keyboard.isDown(controls.keys[key]) then
-			controls.currentKeyDown = key
+function keyboard.update()
+	for key, _ in pairs(keyboard.keys) do
+		if love.keyboard.isDown(keyboard.keys[key]) then
+			keyboard.currentKeyDown = key
 			callHook('plugins', 'keyDown')
 		end
 	end
@@ -36,22 +36,22 @@ end
 function love.keypressed(key)
 	local action = nil
 
-	for k, _ in pairs(controls.keys) do
-		if controls.keys[k] == key then
+	for k, _ in pairs(keyboard.keys) do
+		if keyboard.keys[k] == key then
 			action = k
 		end
 	end
 
 	if action then
-		controls.currentKeyPressed = action
+		keyboard.currentKeyPressed = action
 		callHook('plugins', 'keyPressed')
 	end
 end
 
 -- Functions
 
-function controls.add(action, key)
-	controls.keys[action] = key
+function keyboard.add(action, key)
+	keyboard.keys[action] = key
 end
 
-return controls
+return keyboard

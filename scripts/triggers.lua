@@ -21,12 +21,28 @@ end
 
 -- Public functions
 
-triggers.showName = private.newTrigger(
+triggers.canInteract = private.newTrigger(
 	function(thing, triggeredBy)
-		print(thing.name)
+
+		-- Indicate that this thing can be interacted with
+
+		if not triggeredBy.canInteract then
+			triggeredBy.canInteract = {}
+		end
+
+		table.insert(triggeredBy.canInteract, thing)
+
 	end,
 	function(thing, triggeredBy)
-		print('stopped')
+
+		-- Indicate that this thing can not currently be interacted with
+
+		for i, canInteract in ipairs(triggeredBy.canInteract) do
+			if thing.id == canInteract.id then
+				table.remove(triggeredBy.canInteract, i)
+				break
+			end
+		end
 	end)
 
 

@@ -1,9 +1,5 @@
 -- Data
 data = {
-	screenWidth = 800,
-	screenHeight = 600,
-	staticEntities = {},
-	dynamicEntities = {},
 	state = 'game'
 }
 
@@ -13,18 +9,19 @@ data.plugins = {
 	viewport = require 'engine.viewport',
 	sprites = require 'engine.sprites',
 	renderer = require 'engine.renderer',
-	controls = require 'engine.controls',
+	keyboard = require 'engine.keyboard',
+	mouse = require 'engine.mouse',
 	collision = require "engine.collision",
 	animation = require 'engine.animation',
 	things = require 'engine.things',
-	triggers = require 'engine.triggers',
-	messageBox = require 'engine.messageBox',
 	inventory = require 'engine.inventory',
 	actionBar = require 'engine.actionBar',
-	player = require 'player',
-	items = require 'items',
-	trees = require 'trees',
-	plants = require 'plants'
+
+	constants = require 'scripts.constants',
+	player = require 'scripts.player',
+	triggers = require 'scripts.triggers',
+	interactions = require 'scripts.interactions',
+	items = require 'scripts.items'
 }
 
 function love.load()

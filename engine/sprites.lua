@@ -3,8 +3,8 @@ local spritesTable = {}
 
 function sprites.loadGraphics()
 	loadSprite('cursor', 'images/cursor.png')
-	loadSprite('item_book', 'images/item_book.png')
-	loadSprite('item_seed', 'images/item_seed.png')
+	loadSprite('itemBook', 'images/item_book.png')
+	loadSprite('itemSeed', 'images/item_seed.png')
 	loadSprite('tree1', 'images/tree1.png')
 	loadSprite('plant_1', 'images/plant_1.png')
 

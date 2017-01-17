@@ -3,6 +3,7 @@ local pluginData = {}
 local numberOfSlots = 10
 
 -- Colors
+
 plugin.panelColor = {0, 0, 0, 100}
 plugin.borderColor = {50, 50, 50, 255}
 plugin.activatedPanelColor = {100, 100, 100, 100}
@@ -16,7 +17,7 @@ function plugin.initialise()
 end
 
 function plugin.loadGame()
-	pluginData = data.plugins.persistence.read('saves/actionBar.lua')
+	pluginData = data.plugins.persistence.read('saves/actionBar.lua') or {}
 end
 
 function plugin.saveGame()
@@ -25,7 +26,7 @@ end
 
 function plugin.keyPressed()
 	if data.state == 'game' then
-		local key = data.plugins.controls.currentKeyPressed
+		local key = data.plugins.keyboard.currentKeyPressed
 		for i, v in pairs(pluginData) do
 			if v.shortcutKey == key then
 				plugin.activatedSlot = i

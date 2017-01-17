@@ -150,8 +150,16 @@ function things.setProperty(id, property, value)
 	thingsTable[id][property] = value
 end
 
+function things.getProperty(id, property)
+	return thingsTable[id][property]
+end
+
 function things.getThing(id)
 	return thingsTable[id]
+end
+
+function things.removeThing(id)
+	thingsTable[id] = nil
 end
 
 return things

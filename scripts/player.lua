@@ -4,7 +4,7 @@ local pluginData = {}
 -- Hooks
 
 function plugin.keyDown()
-	local key = data.plugins.controls.currentKeyDown
+	local key = data.plugins.keyboard.currentKeyDown
 	local things = data.plugins.things
 	local isMovementKey = key == 'up' or key == 'down' or key == 'left' or key == 'right'
 	if data.state == 'game' and things and isMovementKey then
@@ -15,7 +15,7 @@ end
 
 function plugin.keyPressed()
 	
-	local key = data.plugins.controls.currentKeyPressed
+	local key = data.plugins.keyboard.currentKeyPressed
 	if data.state == 'game' and key =='drop' then
 
 		-- Get the item data for the currently selected action bar slot
@@ -74,6 +74,31 @@ function plugin.keyPressed()
 
 		if itemData then
 			callHook('plugins', 'itemDrop', itemData)
+		end
+	end
+
+	-- What happens when the player presses the 'use' key
+
+	if key == 'use' then
+		if data.state == 'game' then
+
+			-- If the player has any things in their canInteract table, fire the interact function
+			-- of those things
+
+			local things = data.plugins.things
+			if things then
+				local canInteract = things.getProperty('player', 'canInteract')
+				if canInteract then
+					for _, thing in ipairs(canInteract) do
+						if thing.interact then
+							local interactions = data.plugins.interactions
+							if interactions then
+								interactions[thing.interact](thing)
+							end
+						end
+					end
+				end
+			end
 		end
 	end
 end
