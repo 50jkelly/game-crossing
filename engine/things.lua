@@ -16,6 +16,9 @@ function things.saveGame()
 end
 
 function things.update(dt)
+	local events = data.plugins.events
+	local conditions = data.plugins.conditions
+
 	for i, thing in pairs(thingsTable) do
 
 		-- Some functions expect the id of the thing to be part of the thing table, rather than
@@ -91,46 +94,28 @@ function things.update(dt)
 			thing.animationState = 'idle'
 		end
 
-		local triggers = data.plugins.triggers
-		if triggers then
-			local firing = {}
-			
-			-- Fire triggers that the player is currently standing beside
+		-- Handle events if this thing has events associated with it
 
-			for _, otherThing in pairs(thingsTable) do
-				if thing.id ~= otherThing.id and otherThing.trigger then
-					if overlapping(thing, otherThing, 3) then
-						local trigger = triggers[otherThing.trigger]
-						if trigger then
-							trigger.onFire(otherThing, thing)
-							table.insert(firing, otherThing)
-						end
+		if events then
+			for _, e in pairs(thing.events or {}) do
+				local run = true
+
+				-- Conditions can prevent the event from firing
+
+				if conditions and e.conditions then
+					for condition, _ in pairs(e.conditions) do
+						local result = conditions[condition](thing, e)
+						e.conditions[condition] = result
+						run = run and result
 					end
 				end
-			end
 
-			-- Check the old firing table and call the onStop function of any triggers
-			-- that this thing is no longer overlapping
+				-- Run the event if conditions all passed
 
-			if thing.firing then
-				for i, oldf in ipairs(thing.firing) do
-					local found = false
-					for _, f in ipairs(firing) do
-						if oldf.id == f.id then
-							found = true
-							break
-						end
-					end
-					if not found then
-						triggers[oldf.trigger].onStop(oldf, thing)
-						table.remove(firing, i)
-					end
+				if run and events[e.event] then
+					events[e.event].fire(thing, e)
 				end
 			end
-
-			-- Store the firing table for the next update
-
-			thing.firing = firing
 		end
 	end
 end
@@ -160,6 +145,29 @@ end
 
 function things.removeThing(id)
 	thingsTable[id] = nil
+end
+
+function things.addThing(thing)
+
+	-- Generate a new id for this thing
+
+	local prefix = 'thing'
+	local i = 1
+	local id
+
+	while true do
+		if not thingsTable[prefix..i] then
+			id = prefix..i
+			break
+		end
+		i = i + 1
+	end
+
+	-- Insert the new thing
+
+	thingsTable[id] = thing
+
+	return id
 end
 
 return things

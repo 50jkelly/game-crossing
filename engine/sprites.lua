@@ -5,6 +5,7 @@ function sprites.loadGraphics()
 	loadSprite('cursor', 'images/cursor.png')
 	loadSprite('itemBook', 'images/item_book.png')
 	loadSprite('itemSeed', 'images/item_seed.png')
+	loadSprite('worldItemSeed', 'images/worldItemSeed.png')
 	loadSprite('tree1', 'images/tree1.png')
 	loadSprite('plant_1', 'images/plant_1.png')
 

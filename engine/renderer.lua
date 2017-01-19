@@ -1,8 +1,9 @@
 local renderer = {}
 renderer.drawWorldPosition = false
-renderer.drawTriggers = false
 
 function renderer.draw()
+	local things = data.plugins.things
+	local keyboard = data.plugins.keyboard
 
 	local screenWidth = data.screenWidth
 	local screenHeight = data.screenHeight
@@ -15,7 +16,6 @@ function renderer.draw()
 	-- Convert things table into an array for sorting
 
 	local thingsArray
-	local things = data.plugins.things
 	if things then
 		thingsArray = things.toArray()
 	end
@@ -53,64 +53,108 @@ function renderer.draw()
 			love.graphics.rectangle("fill", thing.x, thing.y, thing.width, thing.height)
 			love.graphics.setColor(255,255,255,255)
 		end
-	end
 
-	-- Draw the triggers
+		-- Draw the interaction indicator
 
-	local triggers = data.plugins.triggers
-	if renderer.drawTriggers and triggers then
-		for id, trigger in pairs(triggers.getPluginData()) do
-			love.graphics.setColor(0, 0, 255, 100)
-			love.graphics.rectangle("fill", trigger.x, trigger.y, trigger.width, trigger.height)
-			love.graphics.setColor(255, 255, 255, 255)
-		end
-	end
+		if data.state == 'game' and things and keyboard then
 
-	-- Draw the interaction indicator
+			-- We want to draw the interaction indicator in the following situation:
+			-- 1. The current thing has an event with conditions
+			-- 2. One of those conditions is "playerPressedUse"
+			-- 3. All conditions are true except for the "playerPressedUse" condition
 
-	local things = data.plugins.things
-	local keyboard = data.plugins.keyboard
-	if data.state == 'game' and things and keyboard then
+			local showIndicator
 
-		-- We don't do anything here if the player cannot currently interact with anything
+			if thing.events then
+				for _, e in ipairs(thing.events) do
+					if e.conditions then
 
-		local canInteract = things.getProperty('player', 'canInteract')
+						if type(e.conditions.playerPressedUse) ~= nil then
+							showIndicator = true
+						end
 
-		if canInteract and table.getn(canInteract) > 0 then
+						for condition, passed in pairs(e.conditions) do
+							if condition ~= 'playerPressedUse' then
+								showIndicator = showIndicator and passed
+							end
+						end
+					end
+				end
+			end
 
-			-- Get the current player position, as we will be drawing the interaction indicator
-			-- right above the player's head
+			if showIndicator then
 
-			local playerX = things.getProperty('player', 'x')
-			local playerY = things.getProperty('player', 'y')
-			local playerYOffset = things.getProperty('player', 'drawYOffset')
-			local boxX = playerX + 3
-			local boxY = playerY + playerYOffset - 12
-			local boxWidth = 15
-			local boxHeight = 15
-			local labelX = playerX + 7
-			local labelY = playerY + playerYOffset - 12
+				-- Get the current player position, as we will be drawing the interaction indicator
+				-- right above the player's head
 
-			-- Get the keyboard shortcut for the use command so we can display it
+				local playerX = things.getProperty('player', 'x')
+				local playerY = things.getProperty('player', 'y')
+				local playerYOffset = things.getProperty('player', 'drawYOffset')
+				local boxX = playerX + 3
+				local boxY = playerY + playerYOffset - 12
+				local boxWidth = 15
+				local boxHeight = 15
+				local labelX = playerX + 7
+				local labelY = playerY + playerYOffset - 12
 
-			local shortcut = keyboard.keys.use
+				-- Get the keyboard shortcut for the use command so we can display it
 
-			love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 2, 2)
-			love.graphics.setColor(50, 50, 50, 255)
-			love.graphics.print(shortcut, labelX, labelY)
-			love.graphics.setColor(255, 255, 255, 255)
+				local shortcut = keyboard.keys.use
+
+				love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 2, 2)
+				love.graphics.setColor(50, 50, 50, 255)
+				love.graphics.print(shortcut, labelX, labelY)
+				love.graphics.setColor(255, 255, 255, 255)
+			end
 		end
 	end
 end
 
 function renderer.drawUI()
 
+	local inventory = data.plugins.inventory
+	local keyboard = data.plugins.keyboard
+	local sprites = data.plugins.sprites
+	local constants = data.plugins.constants
+	local items = data.plugins.items
+	local viewport = data.plugins.viewport
+	local player = data.plugins.player
+
 	local screenWidth = data.screenWidth
 	local screenHeight = data.screenHeight
-	local viewport = data.plugins.viewport
 	if viewport then
 		screenWidth = viewport.getPluginData().width
 		screenHeight = viewport.getPluginData().height
+	end
+
+	-- If the currently selected inventory item is placeable, draw it's sprite at the current
+	-- mouse position
+
+	if inventory and items then
+		local slot = inventory.getSlots()[tostring(inventory.highlightedSlot)] or {}
+		local item = items[slot.item]
+
+		if item and sprites and constants and item.placeable then
+			local sprite = sprites.getSprite(item.worldSprite)
+			local width, height = sprite:getDimensions()
+			local x = love.mouse.getX() - (width / 2)
+			local y = love.mouse.getY() - (height / 2)
+
+			local color = constants.translucentRed
+			if player and viewport then
+				local mousePoint = {
+					x = love.mouse.getX() + viewport.getPluginData().x,
+					y = love.mouse.getY() + viewport.getPluginData().y
+				}
+				if player.inRange(mousePoint) then
+					color = constants.translucentWhite
+				end
+			end
+
+			love.graphics.setColor(color)
+			love.graphics.draw(sprite, x, y)
+			love.graphics.setColor(constants.white)
+		end
 	end
 
 	-- Draw message boxes
@@ -133,12 +177,6 @@ function renderer.drawUI()
 	end
 
 	-- Draw the action bar, which is just another view on the inventory
-
-	local inventory = data.plugins.inventory
-	local keyboard = data.plugins.keyboard
-	local sprites = data.plugins.sprites
-	local constants = data.plugins.constants
-	local items = data.plugins.items
 
 	if inventory and constants then
 		local margin = 10 local width = 50

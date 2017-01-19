@@ -35,17 +35,52 @@ end
 function printTable(table, p)
 	local t = table or {}
 	local prefix = p or 'data'
+
+	-- If any of the values is a table then we need to initialise the table first
+
 	for i, v in pairs(t) do
-		if type(v) == 'table' then io.write(prefix..'[\''..i..'\'] = {}\n') end
-	end
-	for i, v in pairs(t) do
-		local value = v
-		if type(v) == 'string' then value = '\''..value..'\'' end
-		if type(v) == 'boolean' then 
-			if v then value = 'true' else value = 'false' end
+
+		-- Format the index according to its type
+
+		if type(i) == 'string' then
+			i = '\''..i..'\''
 		end
-		if type(v) == 'table' then value = printTable(v, prefix..'[\''..i..'\']') end
-		if value then io.write(prefix..'[\''..i..'\'] = '..value..'\n') end
+
+		if type(v) == 'table' then
+			io.write(prefix..'['..i..'] = {}\n')
+		end
+	end
+
+	-- Start writing the actual values
+
+	for i, v in pairs(t) do
+
+		-- Format the index according to its type
+
+		if type(i) == 'string' then
+			i = '\''..i..'\''
+		end
+
+		-- Format the value correctly according to its type
+
+		local value = v
+		if type(v) == 'string' then
+			value = '\''..value..'\''
+
+		elseif type(v) == 'boolean' then 
+			if v then
+				value = 'true'
+			else
+				value = 'false'
+			end
+
+		elseif type(v) == 'table' then
+			value = printTable(v, prefix..'['..i..']')
+		end
+
+		-- Finally write the index and value
+
+		if value then io.write(prefix..'['..i..'] = '..value..'\n') end
 	end
 end
 

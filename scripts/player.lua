@@ -1,9 +1,8 @@
-local plugin = {}
-local pluginData = {}
+local player = {}
 
 -- Hooks
 
-function plugin.keyDown()
+function player.keyDown()
 	local key = data.plugins.keyboard.currentKeyDown
 	local things = data.plugins.things
 	local isMovementKey = key == 'up' or key == 'down' or key == 'left' or key == 'right'
@@ -13,69 +12,8 @@ function plugin.keyDown()
 	end
 end
 
-function plugin.keyPressed()
-	
+function player.keyPressed()
 	local key = data.plugins.keyboard.currentKeyPressed
-	if data.state == 'game' and key =='drop' then
-
-		-- Get the item data for the currently selected action bar slot
-
-		local itemData
-		local actionBar = data.plugins.actionBar
-		if actionBar then
-			itemData = actionBar.getItemData()
-		end
-
-		-- If an item was found, determine where it should be dropped based on player position
-		--  and direction
-
-		if itemData then
-			local x = pluginData.x
-			local y = pluginData.y
-
-			if pluginData.state == 'walk_up' then
-				y = y - 35
-			end
-
-			if pluginData.state == 'walk_down' then
-				y = y + pluginData.height + 5
-			end
-
-			if pluginData.state == 'walk_left' then
-				x = x - 30
-				y = y - 10
-			end
-
-			if pluginData.state == 'walk_right' then
-				x = x + pluginData.width + 5
-				y = y - 10
-			end
-
-			itemData.item.x = x
-			itemData.item.y = y
-		end
-
-		-- If an item was found, get a static entity and trigger id for it
-
-		if itemData then
-			local staticEntities = data.plugins.staticEntities
-			local triggers = data.plugins.triggers
-
-			if staticEntities then
-				itemData.staticEntityId = getNextFreeId(staticEntities.getPluginData(), 'item')
-			end
-
-			if triggers then
-				itemData.triggerId = getNextFreeId(triggers.getPluginData(), 'trigger')
-			end
-		end
-
-		-- If an item was found, call the appropriate hook
-
-		if itemData then
-			callHook('plugins', 'itemDrop', itemData)
-		end
-	end
 
 	-- What happens when the player presses the 'use' key
 
@@ -93,7 +31,7 @@ function plugin.keyPressed()
 						if thing.interact then
 							local interactions = data.plugins.interactions
 							if interactions then
-								interactions[thing.interact](thing)
+--								interactions[thing.interact](thing)
 							end
 						end
 					end
@@ -101,26 +39,91 @@ function plugin.keyPressed()
 			end
 		end
 	end
+
 end
 
-function plugin.update()
-	if data.state == 'game' then
-		if pluginData.moved and pluginData.colliding == false then
-			pluginData.cycleAnimation = true
-		end
+function love.mousepressed(x, y, button)
 
-		if pluginData.colliding then
-			pluginData.resetAnimation = true
+	local inventory = data.plugins.inventory
+	local items = data.plugins.items
+	local viewport = data.plugins.viewport
+	local things = data.plugins.things
+	local sprites = data.plugins.sprites
+
+	-- What happens when the player clicks the left mouse button
+
+	if button == 1 and inventory and items then
+
+		-- If we are in the game state and the player has selected a placeable item and the mouse
+		-- position is within the player's placeable range...place the item into the world
+
+		if data.state == 'game' then
+
+			if viewport then
+				x = x + viewport.getPluginData().x
+				y = y + viewport.getPluginData().y
+			end
+
+			local slot = inventory.getSlots()[tostring(inventory.highlightedSlot)]
+			local item = items[slot.item]
+
+			if item.placeable and player.inRange({x = x, y = y}) then
+
+				-- Remove the item from the player's inventory and place the item in the world
+
+				inventory.removeItem(slot)
+				
+				if things then
+
+					local width = 10
+					local height = 10
+
+					-- Determine the dimensions of the item in the world using its sprite
+
+					if sprites then
+						width, height = sprites.getSprite(item.worldSprite):getDimensions()
+					end
+
+					-- Add the item to the world
+
+					things.addThing({
+						x = x - width / 2,
+						y = y - height / 2,
+						spriteId = item.worldSprite,
+						width = width,
+						height = height,
+						collides = false,
+						trigger = 'canInteract',
+						interact = 'pickup',
+						pickupItem = 'seed'
+					})
+				end
+			end
 		end
 	end
 end
 
--- Public functions
+-- Public Functions
 
-function plugin.getPluginData()
-	return pluginData
+function player.inRange(point2, range)
+	local things = data.plugins.things
+
+	-- Get player data
+
+	if things then
+		local px = things.getProperty('player', 'x')
+		local py = things.getProperty('player', 'y')
+		local pwidth = things.getProperty('player', 'width')
+		local pheight = things.getProperty('player', 'height')
+		local range = range or things.getProperty('player', 'placementRange')
+
+		local point1 = {
+			x = px + pwidth / 2,
+			y = py + pheight / 2
+		}
+
+		return getDistance(point1, point2) <= range
+	end
 end
 
--- Private functions
-
-return plugin
+return player

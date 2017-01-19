@@ -19,8 +19,8 @@ data.plugins = {
 
 	constants = require 'scripts.constants',
 	player = require 'scripts.player',
-	triggers = require 'scripts.triggers',
-	interactions = require 'scripts.interactions',
+	events = require 'scripts.events',
+	conditions = require 'scripts.conditions',
 	items = require 'scripts.items'
 }
 
@@ -77,4 +77,10 @@ function overlapping(rect1, rect2, margin)
 		or rect2.x + rect2.width + m < rect1.x
 		or rect1.y + rect1.height + m < rect2.y
 		or rect2.y + rect2.height + m < rect1.y)
+end
+
+function getDistance(point1, point2)
+	local a = point2.x - point1.x
+	local b = point2.y - point1.y
+	return (a * a) + (b * b)
 end

@@ -23,7 +23,7 @@ function inventory.loadGame()
 end
 
 function inventory.saveGame()
-	data.plugins.persistence.write(pluginData, 'saves/inventory.lua')
+	data.plugins.persistence.write(inventoryData, 'saves/inventory.lua')
 end
 
 function inventory.keyPressed()
@@ -102,23 +102,23 @@ function inventory.addItem(item)
 	-- If there is an empty slot, place this item into it with a quantity of 1
 
 	if emptySlot then
-		emptySlot.slot.item = triggerData.item
+		emptySlot.slot.item = item
 		emptySlot.slot.amount = 1
 	end
 
 	-- Otherwise, display an inventory full message TODO
 end
 
-function inventory.removeItem(itemData)
+function inventory.removeItem(slot)
 	
 	-- Subtract 1 from the amount of the dropped item
 
-	itemData.inventorySlot.amount = itemData.inventorySlot.amount - 1
+	slot.amount = slot.amount - 1
 
 	-- If amount reaches 0, then remove the item from the inventory
 
-	if itemData.inventorySlot.amount == 0 then
-		itemData.inventorySlot.item = 'empty'
+	if slot.amount == 0 then
+		slot.item = 'empty'
 	end
 end
 

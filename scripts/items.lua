@@ -7,7 +7,9 @@ items.book = {
 
 items.seed = {
 	name = 'Seed',
-	sprite = 'itemSeed'
+	sprite = 'itemSeed',
+	worldSprite = 'worldItemSeed',
+	placeable = true
 }
 
 return items
