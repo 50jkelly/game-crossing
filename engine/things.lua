@@ -8,7 +8,22 @@ function things.initialise()
 end
 
 function things.loadGame()
-	thingsTable = data.plugins.persistence.read('saves/things.lua')
+	local rawData = data.plugins.persistence.read('saves/things.lua')
+
+	-- Split the things into layers
+
+	thingsTable = {
+		{},
+		{},
+		{},
+		{},
+		{}
+	}
+
+	for i, thing in pairs(rawData) do
+		local layer = tonumber(thing.layer)
+		thingsTable[layer][i] = thing
+	end
 end
 
 function things.saveGame()
@@ -19,7 +34,7 @@ function things.update(dt)
 	local events = data.plugins.events
 	local conditions = data.plugins.conditions
 
-	for i, thing in pairs(thingsTable) do
+	for i, thing in pairs(thingsTable[5]) do
 
 		-- Some functions expect the id of the thing to be part of the thing table, rather than
 		-- its index
@@ -122,32 +137,38 @@ end
 
 -- Functions
 
-function things.toArray()
+function things.toArray(layer)
+	local l = layer or 5
 	local thingsArray = {}
-	for i, thing in pairs(thingsTable) do
+	for i, thing in pairs(thingsTable[l]) do
 		table.insert(thingsArray, thing)
 		thingsArray[table.getn(thingsArray)].id = i
 	end
 	return thingsArray
 end
 
-function things.setProperty(id, property, value)
-	thingsTable[id][property] = value
+function things.setProperty(id, property, value, layer)
+	local l = layer or 5
+	thingsTable[l][id][property] = value
 end
 
-function things.getProperty(id, property)
-	return thingsTable[id][property]
+function things.getProperty(id, property, layer)
+	local l = layer or 5
+	return thingsTable[l][id][property]
 end
 
-function things.getThing(id)
-	return thingsTable[id]
+function things.getThing(id, layer)
+	local l = layer or 5
+	return thingsTable[l][id]
 end
 
-function things.removeThing(id)
-	thingsTable[id] = nil
+function things.removeThing(id, layer)
+	local l = layer or 5
+	thingsTable[l][id] = nil
 end
 
-function things.addThing(thing)
+function things.addThing(thing, layer)
+	local l = layer or 5
 
 	-- Generate a new id for this thing
 
@@ -165,9 +186,14 @@ function things.addThing(thing)
 
 	-- Insert the new thing
 
-	thingsTable[id] = thing
+	thing.layer = l
+	thingsTable[l][id] = thing
 
 	return id
+end
+
+function things.maxLayers()
+	return table.getn(thingsTable)
 end
 
 return things

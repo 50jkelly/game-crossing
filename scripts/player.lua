@@ -12,36 +12,6 @@ function player.keyDown()
 	end
 end
 
-function player.keyPressed()
-	local key = data.plugins.keyboard.currentKeyPressed
-
-	-- What happens when the player presses the 'use' key
-
-	if key == 'use' then
-		if data.state == 'game' then
-
-			-- If the player has any things in their canInteract table, fire the interact function
-			-- of those things
-
-			local things = data.plugins.things
-			if things then
-				local canInteract = things.getProperty('player', 'canInteract')
-				if canInteract then
-					for _, thing in ipairs(canInteract) do
-						if thing.interact then
-							local interactions = data.plugins.interactions
-							if interactions then
---								interactions[thing.interact](thing)
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-
-end
-
 function love.mousepressed(x, y, button)
 
 	local inventory = data.plugins.inventory
@@ -60,11 +30,13 @@ function love.mousepressed(x, y, button)
 		if data.state == 'game' then
 
 			if viewport then
-				x = x + viewport.getPluginData().x
-				y = y + viewport.getPluginData().y
+				local vx, vy = viewport.getPosition()
+				x = x + vx
+				y = y + vy
+				print(x, y)
 			end
 
-			local slot = inventory.getSlots()[tostring(inventory.highlightedSlot)]
+			local slot = inventory.getSlots()[inventory.highlightedSlot]
 			local item = items[slot.item]
 
 			if item.placeable and player.inRange({x = x, y = y}) then

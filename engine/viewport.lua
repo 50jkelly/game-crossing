@@ -1,5 +1,4 @@
-local plugin = {}
-local pluginData = {}
+local plugin = {} local pluginData = {}
 
 -- Hooks
 
@@ -35,8 +34,12 @@ end
 
 -- Functions
 
-function plugin.getPluginData()
-	return pluginData
+function plugin.getPosition()
+	return pluginData.x, pluginData.y
+end
+
+function plugin.getDimensions()
+	return pluginData.width, pluginData.height
 end
 
 return plugin

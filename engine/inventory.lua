@@ -87,7 +87,7 @@ function inventory.addItem(item)
 	local emptySlot
 	if not inInventory then
 		for i = 1, inventory.numberOfSlots, 1 do
-			local index = tostring(i)
+			local index = i
 			local slot = inventoryData[index]
 			if slot.item == 'empty' then
 				emptySlot = {

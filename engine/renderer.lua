@@ -1,50 +1,148 @@
 local renderer = {}
+local dayNightShader
+local r, g, b
 renderer.drawWorldPosition = false
+
+function renderer.initialise()
+
+	-- Build the day/night shader
+
+	dayNightShader = love.graphics.newShader[[
+	extern number r;
+	extern number g;
+	extern number b;
+	vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
+		vec4 pixel = Texel(texture, texture_coords);
+		vec4 night = vec4(r, g, b, 1.0);
+		return pixel * night;
+	}
+	]]
+
+	r = 1.0
+	g = 1.0
+	b = 1.0
+end
 
 function renderer.draw()
 	local things = data.plugins.things
 	local keyboard = data.plugins.keyboard
+	local sprites = data.plugins.sprites
+	local viewport = data.plugins.viewport
+	local clock = data.plugins.clock
 
 	local screenWidth = data.screenWidth
 	local screenHeight = data.screenHeight
-	local viewport = data.plugins.viewport
+
 	if viewport then
-		screenWidth = viewport.getPluginData().width
-		screenHeight = viewport.getPluginData().height
+		screenWidth, screenHeight = viewport.getDimensions()
 	end
+
+	-- Calculate the color values to send to the shader
+
+	if clock then
+		local time = clock.getTime(true)
+		local totalMinutes = (time.hours * 60) + time.minutes
+		local day = {r=1.0, g=1.0, b=1.0}
+		local sunset = {r=1.0, g=0.5, b=1.0}
+		local night = {r=0.3, g=0.3, b=0.7}
+		local sunrise = {r=1, g=0.7, b=1.0}
+		local sunsetTime = {start=18*60, finish=20*60}
+		local nightTime = {start=21*60, finish=4*60}
+		local sunriseTime = {start=5*60, finish=8*60}
+		local dayTime = {start=9*60, finish=17*60}
+
+		-- Depending on the current time, we should be changing the color values to the target
+		
+		local target = day
+		if totalMinutes > sunriseTime.start and totalMinutes < dayTime.start then
+			target = sunrise
+		elseif totalMinutes > dayTime.start and totalMinutes < sunsetTime.start then
+			target = day
+		elseif totalMinutes > sunsetTime.start and totalMinutes < nightTime.start then
+			target = sunset
+		else
+			target = night
+		end
+
+		if r > target.r then
+			r = r - 0.005
+		elseif r < target.r then
+			r = r + 0.005
+		end
+
+		if g > target.g then
+			g = g - 0.005
+		elseif g < target.g then
+			g = g + 0.005
+		end
+
+		if b > target.b then
+			b = b - 0.005
+		elseif b < target.b then
+			b = b + 0.005
+		end
+
+		print(target.r, target.g, target.b)
+		print(r, g, b)
+		print()
+	end
+
+	-- Send the color values to the shader
+
+	dayNightShader:send('r', r)
+	dayNightShader:send('g', g)
+	dayNightShader:send('b', b)
+
+	for layer=1, things.maxLayers(), 1 do
 
 	-- Convert things table into an array for sorting
 
 	local thingsArray
 	if things then
-		thingsArray = things.toArray()
+		thingsArray = things.toArray(layer)
 	end
 
 	-- Sort things array according to y position
 
-	table.sort(thingsArray, function(a, b)
-		return a.y < b.y
-	end)
+	if layer == 5 then
+		table.sort(thingsArray, function(a, b)
+			return a.y < b.y
+		end)
+	end
 
 	-- Draw each thing
 
 	for _, thing in ipairs(thingsArray) do
-		local sprites = data.plugins.sprites
-		if sprites then
-			local sprite = sprites.getSprite(thing.spriteId)
-			if sprite then
-				local xOffset = thing.drawXOffset or 0
-				local yOffset = thing.drawYOffset or 0
-				local drawX = thing.x + xOffset
-				local drawY = thing.y + yOffset
-				local scale = thing.scale or 1
-				love.graphics.draw(sprite, drawX, drawY, 0, scale, scale, 0, 0)
-			end
+
+		-- Do not draw the thing if it is not within the viewport
+
+		local xOffset = thing.drawXOffset or 0
+		local yOffset = thing.drawYOffset or 0
+		local drawX = thing.x + xOffset
+		local drawY = thing.y + yOffset
+		local sprite = sprites.getSprite(thing.spriteId)
+		local width, height = sprite:getDimensions()
+
+		local inViewport = true
+		if viewport then
+			local vx, vy = viewport.getPosition()
+			local vwidth, vheight = viewport.getDimensions()
+			inViewport =
+				drawX + width > vx and
+				drawX < vx + vwidth and
+				drawY + height > vy and
+				drawY < vy + vheight
+		end
+
+		if inViewport then
+			love.graphics.setShader(dayNightShader)
+			love.graphics.draw(sprite, drawX, drawY, 0, 1, 1, 0, 0)
+			love.graphics.setShader()
 		end
 
 		-- Draw the world position
 
-		if renderer.drawWorldPosition then
+		if layer == 5 and renderer.drawWorldPosition then
 			if thing.collides then
 				love.graphics.setColor(255, 0, 0, 100)
 			else
@@ -56,7 +154,7 @@ function renderer.draw()
 
 		-- Draw the interaction indicator
 
-		if data.state == 'game' and things and keyboard then
+		if layer == 5 and data.state == 'game' and things and keyboard then
 
 			-- We want to draw the interaction indicator in the following situation:
 			-- 1. The current thing has an event with conditions
@@ -109,6 +207,7 @@ function renderer.draw()
 		end
 	end
 end
+end
 
 function renderer.drawUI()
 
@@ -119,19 +218,20 @@ function renderer.drawUI()
 	local items = data.plugins.items
 	local viewport = data.plugins.viewport
 	local player = data.plugins.player
+	local clock = data.plugins.clock
 
 	local screenWidth = data.screenWidth
 	local screenHeight = data.screenHeight
 	if viewport then
-		screenWidth = viewport.getPluginData().width
-		screenHeight = viewport.getPluginData().height
+		screenWidth, screenHeight = viewport.getDimensions()
+		vx, vy = viewport.getPosition()
 	end
 
 	-- If the currently selected inventory item is placeable, draw it's sprite at the current
 	-- mouse position
 
 	if inventory and items then
-		local slot = inventory.getSlots()[tostring(inventory.highlightedSlot)] or {}
+		local slot = inventory.getSlots()[inventory.highlightedSlot] or {}
 		local item = items[slot.item]
 
 		if item and sprites and constants and item.placeable then
@@ -143,8 +243,8 @@ function renderer.drawUI()
 			local color = constants.translucentRed
 			if player and viewport then
 				local mousePoint = {
-					x = love.mouse.getX() + viewport.getPluginData().x,
-					y = love.mouse.getY() + viewport.getPluginData().y
+					x = love.mouse.getX() + vx,
+					y = love.mouse.getY() + vy
 				}
 				if player.inRange(mousePoint) then
 					color = constants.translucentWhite
@@ -197,7 +297,7 @@ function renderer.drawUI()
 			local panelColor = constants.translucentBlack
 			local borderColor = constants.black
 
-			if i == tostring(inventory.highlightedSlot) then
+			if i == inventory.highlightedSlot then
 				panelColor = constants.translucentGrey
 			end
 
@@ -244,11 +344,6 @@ function renderer.drawUI()
 
 	-- Draw player inventory
 
-	local constants = data.plugins.constants
-	local inventory = data.plugins.inventory
-	local items = data.plugins.items
-	local keyboard = data.plugins.keyboard
-	local sprites = data.plugins.sprites
 	if data.state == 'inventory' and constants and inventory then
 
 		-- Draw the panel

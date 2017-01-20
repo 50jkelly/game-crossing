@@ -16,6 +16,8 @@ data.plugins = {
 	things = require 'engine.things',
 	inventory = require 'engine.inventory',
 	actionBar = require 'engine.actionBar',
+	fpsTitle = require 'engine.fpsTitle',
+	clock = require 'engine.clock',
 
 	constants = require 'scripts.constants',
 	player = require 'scripts.player',
@@ -35,7 +37,6 @@ function love.update(dt)
 end
 
 function love.draw()
-	love.graphics.setBackgroundColor(140, 225, 120)
 	callHook('plugins', 'preDraw')
 	callHook('plugins', 'draw')
 	callHook('plugins', 'postDraw')
