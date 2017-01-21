@@ -265,8 +265,9 @@ function renderer.drawUI()
 		local lineHeight = 20
 		local panelWidth = 300
 		local panelHeight = 320
-		local panelX = (screenWidth - panelWidth) / 2
-		local panelY = (screenHeight - panelHeight) / 2
+		local viewport = getViewport()
+		local panelX = (viewport.width - panelWidth) / 2
+		local panelY = (viewport.height - panelHeight) / 2
 		local textYMargin = 8
 		local margin = 10
 		local x = panelX + margin
@@ -287,7 +288,7 @@ function renderer.drawUI()
 
 			if inventory.highlightedSlot == tonumber(index) then
 				if sprites then
-					love.graphics.draw(sprites.getSprite('cursor'), x, y)
+					love.graphics.draw(sprites.getSprite('cursor').sprite, x, y)
 				end
 			end
 
@@ -327,7 +328,7 @@ function renderer.drawUI()
 					if inventory.highlightedSlot == tonumber(index) then
 						local sprite = sprites.getSprite(items[slot.item].sprite)
 						if sprite then
-							love.graphics.draw(sprite, x, startY)
+							love.graphics.draw(sprite.sprite, x, startY)
 						end
 					end
 				end

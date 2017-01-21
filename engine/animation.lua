@@ -72,7 +72,13 @@ function plugin.cycle(thing, dt)
 
 			-- Set the current sprite
 
-			thing.spriteId = pluginData[thing.id][thing.animationState][thing.frameCounter]
+			local sprites = data.plugins.sprites
+			local spriteId = pluginData
+				[thing.id]
+				[thing.animationState]
+				[thing.frameCounter]
+
+			thing.sprite = sprites.getSprite(spriteId)
 		end
 	end
 end

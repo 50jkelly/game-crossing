@@ -7,7 +7,7 @@ function sprites.loadGraphics()
 	loadSprite('itemSeed', 'images/item_seed.png')
 	loadSprite('worldItemSeed', 'images/worldItemSeed.png')
 	loadSprite('plant_1', 'images/plant_1.png')
-	loadSprite('grass', 'images/grass.png')
+	loadSprite('grass1', 'images/grass1.png')
 
 	loadSprite('tree1Bottom', 'images/trees/tree1Bottom.png')
 	loadSprite('tree1Top', 'images/trees/tree1Top.png')

@@ -15,12 +15,12 @@ function viewport.update()
 		local playerRect = player.getRect()
 
 		viewport.x = playerRect.x +
-			playerRect.width -
-			(viewport.width / 2)
+		playerRect.width -
+		(viewport.width / 2)
 
 		viewport.y = playerRect.y +
-			playerRect.height -
-			(viewport.height / 2)
+		playerRect.height -
+		(viewport.height / 2)
 	end
 end
 

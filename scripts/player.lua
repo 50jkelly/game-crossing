@@ -1,4 +1,36 @@
-local player = {}
+local player = {
+	expand = {
+		player = function(thing, id, thingsTable)
+			local sprites = data.plugins.sprites
+
+			thing.sprite = sprites.getSprite('player_walk_down_1')
+			thing.width, thing.height = thing.sprite.sprite:getDimensions()
+			thing.blockedStates = {}
+			thing.frameCounter = 1
+			thing.speed = 100
+			thing.animationState = 'idle'
+			thing.placementRange = 500
+			thing.isAnimated = true
+			thing.framesPerSecond = 12
+			thing.moveState = idle
+			thing.canMove = true
+			thing.timeSinceLastFrame = 0
+			thing.layer = 5
+
+			thingsTable[id] = thing
+		end
+	},
+	condense = {
+		player = function(thing, id, rawData)
+			rawData[id] = {
+				type = thing.type,
+				subtype = thing.subtype,
+				x = thing.x,
+				y = thing.y
+			}
+		end
+	}
+}
 
 -- Hooks
 
@@ -108,10 +140,10 @@ function player.getRect()
 		local height = things.getProperty('player', 'height')
 
 		return {
-			x = x,
-			y = y,
-			width = width,
-			height = height
+			x = x or 0,
+			y = y or 0,
+			width = width or 0,
+			height = height or 0
 		}
 	end
 end

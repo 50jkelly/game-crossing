@@ -1,171 +1,147 @@
 local things = {}
+local rawData = {}
 local thingsTable = {}
 local lastId = nil
 
+local expand = {
+	player = require 'scripts.player',
+	grass = require 'scripts.grass',
+	tree = require 'scripts.trees'
+}
+
 -- Hooks
 
-function things.initialise()
+function things.assetsLoaded()
 	things.loadGame()
 end
 
 function things.loadGame()
-	local rawData = data.plugins.persistence.read('saves/things.lua')
+	rawData = data.plugins.persistence.read('saves/things.lua')
 
-	-- Split the things into layers
-
-	thingsTable = {{}, {}, {}, {}, {}, {}}
-	if rawData then
-		for layerIndex, layer in ipairs(rawData) do
-			for i, thing in pairs(layer) do
-				thingsTable[layerIndex][i] = thing
-			end
-		end
+	for id, thing in pairs(rawData) do
+		expand[thing.type].expand[thing.subtype](thing, id, thingsTable)
 	end
 end
 
 function things.saveGame()
-	data.plugins.persistence.write(thingsTable, 'saves/things.lua')
+	for id, thing in pairs(thingsTable) do
+		expand[thing.type].condense[thing.subtype](thing, id, rawData)
+	end
+	data.plugins.persistence.write(rawData, 'saves/things.lua')
 end
 
 function things.update(dt)
 	local events = data.plugins.events
 	local conditions = data.plugins.conditions
 	local renderer = data.plugins.renderer
-	local viewport = data.plugins.viewport
 	local sprites = data.plugins.sprites
 	local animation = data.plugins.animation
 
-	local viewportWidth = love.graphics.getWidth()
-	local viewportHeight = love.graphics.getHeight()
-	local viewportX = 0
-	local viewportY = 0
+	local viewport = getViewport()
 
-	if viewport then
-		viewportX = viewport.x
-		viewportY = viewport.y
-	end
+	for id, thing in pairs(thingsTable) do
 
-	for layerIndex, layer in ipairs(thingsTable) do
-		for i, t in pairs(layer) do
+		local inViewport =
+		thing.x + thing.width > viewport.x and
+		thing.x < viewport.x + viewport.width and
+		thing.y + thing.height > viewport.y and
+		thing.y < viewport.y + viewport.height
 
-			local inViewport = true
+		if inViewport then
+			table.insert(renderer.toDraw[thing.layer], thing)
+		end
 
-			if sprites then
-				t.sprite = sprites.getSprite(t.spriteId)
-				t.width = t.width or t.sprite.width
-				t.height = t.height or t.sprite.height
+		-- Some functions expect the id of the thing to be part of the thing table, rather than
+		-- its index
 
-				if t.lightBlock then
-					t.lightBlockSprite = sprites.getSprite(t.lightBlock)
-				end
+		thing.id = id
 
-				-- Determine if this thing is in the viewport and can therefore be
-				-- drawn. The reason to do this here instead of in the renderer is
-				-- to limit the number of times we traverse the entire things array
+		if thing.canMove and inViewport then
 
-				inViewport =
-					t.x + t.width > viewportX and
-					t.x < viewportX + viewportWidth and
-					t.y + t.height > viewportY and
-					t.y < viewportY + viewportHeight
+			-- Save the thing's current position in case we need to move it back
 
-				if inViewport then
-					table.insert(renderer.toDraw[layerIndex], t)
-				end
+			thing.oldX = thing.x
+			thing.oldY = thing.y
+
+			-- If the current movement state is a blocked state then set the current movement
+			-- state to idle. Otherwise, clear all blocked states.
+
+			if thing.blockedStates[thing.moveState] then
+				thing.moveState = 'idle'
+			else
+				thing.blockedStates = {}
 			end
 
-			-- Some functions expect the id of the thing to be part of the thing table, rather than
-			-- its index
+			-- If the thing can move, then update its position according to its movement state
 
-			t.id = i
+			local speed = thing.speed * dt
+			if thing.moveState == 'move_up' then
+				thing.y = thing.y - speed
+			end
+			if thing.moveState == 'move_down' then
+				thing.y = thing.y + speed
+			end
+			if thing.moveState == 'move_left' then
+				thing.x = thing.x - speed
+			end
+			if thing.moveState == 'move_right' then
+				thing.x = thing.x + speed
+			end
 
-			if t.canMove and inViewport then
+			-- Reset the move state so that it must be continually reset on
+			-- update for the thing to continue moving
 
-				-- Save the thing's current position in case we need to move it back
+			thing.moveState = 'idle'
 
-				t.oldX = t.x
-				t.oldY = t.y
+			-- If the thing is colliding with something else, then set its
+			-- position back to its old position, and add the current movement
+			-- state to the blocked states so the thing cannot continue to
+			-- move in that direction
 
-				-- If the current movement state is a blocked state then set the current movement
-				-- state to idle. Otherwise, clear all blocked states.
-
-				if t.blockedStates[t.moveState] then
-					t.moveState = 'idle'
-				else
-					t.blockedStates = {}
-				end
-
-				-- If the thing can move, then update its position according to its movement state
-
-				local speed = t.speed * dt
-				if t.moveState == 'move_up' then
-					t.y = t.y - speed
-				end
-				if t.moveState == 'move_down' then
-					t.y = t.y + speed
-				end
-				if t.moveState == 'move_left' then
-					t.x = t.x - speed
-				end
-				if t.moveState == 'move_right' then
-					t.x = t.x + speed
-				end
-
-				-- Reset the move state so that it must be continually reset on
-				-- update for the thing to continue moving
-
-				t.moveState = 'idle'
-
-				-- If the thing is colliding with something else, then set its
-				-- position back to its old position, and add the current movement
-				-- state to the blocked states so the thing cannot continue to
-				-- move in that direction
-
-				local collision = data.plugins.collision
-				if collision then
-					local collidingWith = collision.colliding(t, layer)
-					if collidingWith and collidingWith.collides then
-						t.x = t.oldX
-						t.y = t.oldY
-						if t.moveState ~= idle then
-							t.blockedStates[t.moveState] = true
-						end
+			local collision = data.plugins.collision
+			if collision then
+				local collidingWith = collision.colliding(thing, thingsTable)
+				if collidingWith and collidingWith.collides then
+					thing.x = thing.oldX
+					thing.y = thing.oldY
+					if thing.moveState ~= idle then
+						thing.blockedStates[thing.moveState] = true
 					end
 				end
 			end
+		end
 
-			if t.isAnimated and inViewport then
+		if thing.isAnimated and inViewport then
 
-				-- Update the thing's sprite according to its animation state
+			-- Update the thing's sprite according to its animation state
 
-				if animation then
-					animation.cycle(t, dt)
-				end
-
-				t.animationState = 'idle'
+			if animation then
+				animation.cycle(thing, dt)
 			end
 
-			-- Handle events if this thing has events associated with it
+			thing.animationState = 'idle'
+		end
 
-			if events then
-				for _, e in pairs(t.events or {}) do
-					local run = true
+		-- Handle events if this thing has events associated with it
 
-					-- Conditions can prevent the event from firing
+		if events then
+			for _, e in pairs(thing.events or {}) do
+				local run = true
 
-					if conditions and e.conditions then
-						for condition, _ in pairs(e.conditions) do
-							local result = conditions[condition](t, e)
-							e.conditions[condition] = result
-							run = run and result
-						end
+				-- Conditions can prevent the event from firing
+
+				if conditions and e.conditions then
+					for condition, _ in pairs(e.conditions) do
+						local result = conditions[condition](t, e)
+						e.conditions[condition] = result
+						run = run and result
 					end
+				end
 
-					-- Run the event if conditions all passed
+				-- Run the event if conditions all passed
 
-					if run and events[e.event] then
-						events[e.event].fire(t, e)
-					end
+				if run and events[e.event] then
+					events[e.event].fire(t, e)
 				end
 			end
 		end
@@ -174,42 +150,40 @@ end
 
 -- Functions
 
-function things.setProperty(id, property, value, layer)
-	local l = layer or 5
-	if thingsTable and thingsTable[l] and thingsTable[l][id] then
-		thingsTable[l][id][property] = value
+function things.setProperty(id, property, value)
+	if thingsTable and thingsTable and thingsTable[id] then
+		thingsTable[id][property] = value
 	end
 end
 
-function things.getProperty(id, property, layer)
-	local l = layer or 5
-	if thingsTable and thingsTable[l] and thingsTable[l][id] then
-		return thingsTable[l][id][property]
+function things.getProperty(id, property)
+	if thingsTable and thingsTable and thingsTable[id] then
+		return thingsTable[id][property]
 	end
 end
 
-function things.getThing(id, layer)
-	local l = layer or 5
-	return thingsTable[l][id]
+function things.getThing(id)
+	return thingsTable[id]
 end
 
-function things.removeThing(id, layer)
-	local l = layer or 5
-	thingsTable[l][id] = nil
+function things.removeThing(id)
+	thingsTable[id] = nil
 end
 
-function things.addThing(thing, layer)
-	local l = layer or 5
+function things.addThing(thing)
+	local id = things.newId()
+	thingsTable[id] = thing
+	return id
+end
 
-	-- Generate a new id for this thing
-
+function things.newId()
 	local prefix = 'thing'
 	local i = 1
 	local id
 
 	if lastId == nil then
 		while true do
-			if not thingsTable[l][prefix..i] then
+			if not thingsTable[prefix..i] and not rawData[prefix..i] then
 				lastId = i
 				id = prefix..i
 				break
@@ -221,16 +195,7 @@ function things.addThing(thing, layer)
 		id = prefix..lastId
 	end
 
-	-- Insert the new thing
-
-	thing.layer = l
-	thingsTable[l][id] = thing
-
 	return id
-end
-
-function things.maxLayers()
-	return table.getn(thingsTable)
 end
 
 return things
