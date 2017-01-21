@@ -1,5 +1,6 @@
 local things = {}
 local thingsTable = {}
+local lastId = nil
 
 -- Hooks
 
@@ -12,17 +13,13 @@ function things.loadGame()
 
 	-- Split the things into layers
 
-	thingsTable = {
-		{},
-		{},
-		{},
-		{},
-		{}
-	}
-
-	for i, thing in pairs(rawData) do
-		local layer = tonumber(thing.layer)
-		thingsTable[layer][i] = thing
+	thingsTable = {{}, {}, {}, {}, {}, {}}
+	if rawData then
+		for layerIndex, layer in ipairs(rawData) do
+			for i, thing in pairs(layer) do
+				thingsTable[layerIndex][i] = thing
+			end
+		end
 	end
 end
 
@@ -33,102 +30,142 @@ end
 function things.update(dt)
 	local events = data.plugins.events
 	local conditions = data.plugins.conditions
+	local renderer = data.plugins.renderer
+	local viewport = data.plugins.viewport
+	local sprites = data.plugins.sprites
+	local animation = data.plugins.animation
 
-	for i, thing in pairs(thingsTable[5]) do
+	local viewportWidth = love.graphics.getWidth()
+	local viewportHeight = love.graphics.getHeight()
+	local viewportX = 0
+	local viewportY = 0
 
-		-- Some functions expect the id of the thing to be part of the thing table, rather than
-		-- its index
+	if viewport then
+		viewportX = viewport.x
+		viewportY = viewport.y
+	end
 
-		thing.id = i
+	for layerIndex, layer in ipairs(thingsTable) do
+		for i, t in pairs(layer) do
 
-		if thing.canMove then
+			local inViewport = true
 
-			-- Save the thing's current position in case we need to move it back
+			if sprites then
+				t.sprite = sprites.getSprite(t.spriteId)
+				t.width = t.width or t.sprite.width
+				t.height = t.height or t.sprite.height
 
-			thing.oldX = thing.x
-			thing.oldY = thing.y
+				if t.lightBlock then
+					t.lightBlockSprite = sprites.getSprite(t.lightBlock)
+				end
 
-			-- If the current movement state is a blocked state then set the current movement
-			-- state to idle. Otherwise, clear all blocked states.
+				-- Determine if this thing is in the viewport and can therefore be
+				-- drawn. The reason to do this here instead of in the renderer is
+				-- to limit the number of times we traverse the entire things array
 
-			if thing.blockedStates[thing.moveState] then
-				thing.moveState = 'idle'
-			else
-				for _, blocked in pairs(thing.blockedStates) do
-					blocked = false
+				inViewport =
+					t.x + t.width > viewportX and
+					t.x < viewportX + viewportWidth and
+					t.y + t.height > viewportY and
+					t.y < viewportY + viewportHeight
+
+				if inViewport then
+					table.insert(renderer.toDraw[layerIndex], t)
 				end
 			end
 
-			-- If the thing can move, then update its position accoriding to its movement state
+			-- Some functions expect the id of the thing to be part of the thing table, rather than
+			-- its index
 
-			local speed = thing.speed * dt
-			if thing.moveState == 'move_up' then
-				thing.y = thing.y - speed
-			end
-			if thing.moveState == 'move_down' then
-				thing.y = thing.y + speed
-			end
-			if thing.moveState == 'move_left' then
-				thing.x = thing.x - speed
-			end
-			if thing.moveState == 'move_right' then
-				thing.x = thing.x + speed
-			end
+			t.id = i
 
-			-- Reset the move state so that it must be continually reset on update for the thing
-			-- to continue moving
+			if t.canMove and inViewport then
 
-			thing.moveState = 'idle'
+				-- Save the thing's current position in case we need to move it back
 
-			-- If the thing is colliding with something else, then set its position back to its
-			-- old position, and add the current movement state to the blocked states so the
-			-- thing cannot continue to move in that direction
+				t.oldX = t.x
+				t.oldY = t.y
 
-			local collision = data.plugins.collision
-			if collision then
-				local collidingWith = collision.colliding(thing, things.toArray())
-				if collidingWith and collidingWith.collides then
-					thing.x = thing.oldX
-					thing.y = thing.oldY
-					if thing.moveState ~= idle then
-						thing.blockedStates[thing.moveState] = true
+				-- If the current movement state is a blocked state then set the current movement
+				-- state to idle. Otherwise, clear all blocked states.
+
+				if t.blockedStates[t.moveState] then
+					t.moveState = 'idle'
+				else
+					t.blockedStates = {}
+				end
+
+				-- If the thing can move, then update its position according to its movement state
+
+				local speed = t.speed * dt
+				if t.moveState == 'move_up' then
+					t.y = t.y - speed
+				end
+				if t.moveState == 'move_down' then
+					t.y = t.y + speed
+				end
+				if t.moveState == 'move_left' then
+					t.x = t.x - speed
+				end
+				if t.moveState == 'move_right' then
+					t.x = t.x + speed
+				end
+
+				-- Reset the move state so that it must be continually reset on
+				-- update for the thing to continue moving
+
+				t.moveState = 'idle'
+
+				-- If the thing is colliding with something else, then set its
+				-- position back to its old position, and add the current movement
+				-- state to the blocked states so the thing cannot continue to
+				-- move in that direction
+
+				local collision = data.plugins.collision
+				if collision then
+					local collidingWith = collision.colliding(t, layer)
+					if collidingWith and collidingWith.collides then
+						t.x = t.oldX
+						t.y = t.oldY
+						if t.moveState ~= idle then
+							t.blockedStates[t.moveState] = true
+						end
 					end
 				end
 			end
-		end
 
-		if thing.isAnimated then
+			if t.isAnimated and inViewport then
 
-			-- Update the thing's sprite according to its animation state
+				-- Update the thing's sprite according to its animation state
 
-			local animation = data.plugins.animation
-			if animation then
-				animation.cycle(thing, dt)
-			end
-
-			thing.animationState = 'idle'
-		end
-
-		-- Handle events if this thing has events associated with it
-
-		if events then
-			for _, e in pairs(thing.events or {}) do
-				local run = true
-
-				-- Conditions can prevent the event from firing
-
-				if conditions and e.conditions then
-					for condition, _ in pairs(e.conditions) do
-						local result = conditions[condition](thing, e)
-						e.conditions[condition] = result
-						run = run and result
-					end
+				if animation then
+					animation.cycle(t, dt)
 				end
 
-				-- Run the event if conditions all passed
+				t.animationState = 'idle'
+			end
 
-				if run and events[e.event] then
-					events[e.event].fire(thing, e)
+			-- Handle events if this thing has events associated with it
+
+			if events then
+				for _, e in pairs(t.events or {}) do
+					local run = true
+
+					-- Conditions can prevent the event from firing
+
+					if conditions and e.conditions then
+						for condition, _ in pairs(e.conditions) do
+							local result = conditions[condition](t, e)
+							e.conditions[condition] = result
+							run = run and result
+						end
+					end
+
+					-- Run the event if conditions all passed
+
+					if run and events[e.event] then
+						events[e.event].fire(t, e)
+					end
 				end
 			end
 		end
@@ -137,24 +174,18 @@ end
 
 -- Functions
 
-function things.toArray(layer)
-	local l = layer or 5
-	local thingsArray = {}
-	for i, thing in pairs(thingsTable[l]) do
-		table.insert(thingsArray, thing)
-		thingsArray[table.getn(thingsArray)].id = i
-	end
-	return thingsArray
-end
-
 function things.setProperty(id, property, value, layer)
 	local l = layer or 5
-	thingsTable[l][id][property] = value
+	if thingsTable and thingsTable[l] and thingsTable[l][id] then
+		thingsTable[l][id][property] = value
+	end
 end
 
 function things.getProperty(id, property, layer)
 	local l = layer or 5
-	return thingsTable[l][id][property]
+	if thingsTable and thingsTable[l] and thingsTable[l][id] then
+		return thingsTable[l][id][property]
+	end
 end
 
 function things.getThing(id, layer)
@@ -176,12 +207,18 @@ function things.addThing(thing, layer)
 	local i = 1
 	local id
 
-	while true do
-		if not thingsTable[prefix..i] then
-			id = prefix..i
-			break
+	if lastId == nil then
+		while true do
+			if not thingsTable[l][prefix..i] then
+				lastId = i
+				id = prefix..i
+				break
+			end
+			i = i + 1
 		end
-		i = i + 1
+	else
+		lastId = lastId + 1
+		id = prefix..lastId
 	end
 
 	-- Insert the new thing

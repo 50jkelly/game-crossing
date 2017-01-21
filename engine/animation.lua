@@ -52,10 +52,17 @@ local pluginData = {
 function plugin.cycle(thing, dt)
 	if thing.id == 'player' then
 
+		-- Initialise data
+
+		thing.frameCounter = thing.frameCounter or 0
+		thing.timeSinceLastFrame = thing.timeSinceLastFrame or 0
+
 		-- Maintain time since last player animation update
+
 		thing.timeSinceLastFrame = thing.timeSinceLastFrame + dt
 
 		-- Cycle the frames
+
 		if thing.timeSinceLastFrame > 1 / thing.framesPerSecond then
 			thing.timeSinceLastFrame = 0
 			thing.frameCounter = thing.frameCounter + 1
@@ -64,6 +71,7 @@ function plugin.cycle(thing, dt)
 			end
 
 			-- Set the current sprite
+
 			thing.spriteId = pluginData[thing.id][thing.animationState][thing.frameCounter]
 		end
 	end

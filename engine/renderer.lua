@@ -1,212 +1,134 @@
 local renderer = {}
-local dayNightShader
-local r, g, b
-renderer.drawWorldPosition = false
-
-function renderer.initialise()
-
-	-- Build the day/night shader
-
-	dayNightShader = love.graphics.newShader[[
-	extern number r;
-	extern number g;
-	extern number b;
-	vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
-		vec4 pixel = Texel(texture, texture_coords);
-		vec4 night = vec4(r, g, b, 1.0);
-		return pixel * night;
-	}
-	]]
-
-	r = 1.0
-	g = 1.0
-	b = 1.0
-end
+renderer.toDraw = {{}, {}, {}, {}, {}, {}}
 
 function renderer.draw()
+
+	-- Get plugins
+
 	local things = data.plugins.things
 	local keyboard = data.plugins.keyboard
 	local sprites = data.plugins.sprites
-	local viewport = data.plugins.viewport
-	local clock = data.plugins.clock
+	local shaders = data.plugins.shaders
+	local constants = data.plugins.constants
 
-	local screenWidth = data.screenWidth
-	local screenHeight = data.screenHeight
+	-- Define variables
 
-	if viewport then
-		screenWidth, screenHeight = viewport.getDimensions()
-	end
+	local screenWidth = love.graphics.getWidth()
+	local screenHeight = love.graphics.getHeight()
 
-	-- Calculate the color values to send to the shader
+	-- Set up canvases
 
-	if clock then
-		local time = clock.getTime(true)
-		local totalMinutes = (time.hours * 60) + time.minutes
-		local day = {r=1.0, g=1.0, b=1.0}
-		local sunset = {r=1.0, g=0.5, b=1.0}
-		local night = {r=0.3, g=0.3, b=0.7}
-		local sunrise = {r=1, g=0.7, b=1.0}
-		local sunsetTime = {start=18*60, finish=20*60}
-		local nightTime = {start=21*60, finish=4*60}
-		local sunriseTime = {start=5*60, finish=8*60}
-		local dayTime = {start=9*60, finish=17*60}
+	local diffuseCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
+	local lightBlockCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
+	local resultCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
 
-		-- Depending on the current time, we should be changing the color values to the target
-		
-		local target = day
-		if totalMinutes > sunriseTime.start and totalMinutes < dayTime.start then
-			target = sunrise
-		elseif totalMinutes > dayTime.start and totalMinutes < sunsetTime.start then
-			target = day
-		elseif totalMinutes > sunsetTime.start and totalMinutes < nightTime.start then
-			target = sunset
-		else
-			target = night
-		end
+	love.graphics.setCanvas(lightBlockCanvas)
+	love.graphics.setBlendMode('alpha')
+	love.graphics.setColor(constants.white)
+	local viewport = getViewport()
+	love.graphics.rectangle('fill',
+		viewport.x,
+		viewport.y,
+		screenWidth,
+		screenHeight)
 
-		if r > target.r then
-			r = r - 0.005
-		elseif r < target.r then
-			r = r + 0.005
-		end
+	-- Set up shaders
 
-		if g > target.g then
-			g = g - 0.005
-		elseif g < target.g then
-			g = g + 0.005
-		end
+	local dynamicLightShader = shaders.dynamicLight or { shader = nil }
 
-		if b > target.b then
-			b = b - 0.005
-		elseif b < target.b then
-			b = b + 0.005
-		end
+	-- Start drawing
 
-		print(target.r, target.g, target.b)
-		print(r, g, b)
-		print()
-	end
+	for layer=1, table.getn(renderer.toDraw), 1 do
 
-	-- Send the color values to the shader
+		for _, thing in ipairs(renderer.toDraw[layer]) do
+			love.graphics.setCanvas(diffuseCanvas)
+			love.graphics.setBlendMode('alpha')
+			love.graphics.draw(thing.sprite.sprite, thing.x, thing.y)
 
-	dayNightShader:send('r', r)
-	dayNightShader:send('g', g)
-	dayNightShader:send('b', b)
-
-	for layer=1, things.maxLayers(), 1 do
-
-	-- Convert things table into an array for sorting
-
-	local thingsArray
-	if things then
-		thingsArray = things.toArray(layer)
-	end
-
-	-- Sort things array according to y position
-
-	if layer == 5 then
-		table.sort(thingsArray, function(a, b)
-			return a.y < b.y
-		end)
-	end
-
-	-- Draw each thing
-
-	for _, thing in ipairs(thingsArray) do
-
-		-- Do not draw the thing if it is not within the viewport
-
-		local xOffset = thing.drawXOffset or 0
-		local yOffset = thing.drawYOffset or 0
-		local drawX = thing.x + xOffset
-		local drawY = thing.y + yOffset
-		local sprite = sprites.getSprite(thing.spriteId)
-		local width, height = sprite:getDimensions()
-
-		local inViewport = true
-		if viewport then
-			local vx, vy = viewport.getPosition()
-			local vwidth, vheight = viewport.getDimensions()
-			inViewport =
-				drawX + width > vx and
-				drawX < vx + vwidth and
-				drawY + height > vy and
-				drawY < vy + vheight
-		end
-
-		if inViewport then
-			love.graphics.setShader(dayNightShader)
-			love.graphics.draw(sprite, drawX, drawY, 0, 1, 1, 0, 0)
-			love.graphics.setShader()
-		end
-
-		-- Draw the world position
-
-		if layer == 5 and renderer.drawWorldPosition then
-			if thing.collides then
-				love.graphics.setColor(255, 0, 0, 100)
-			else
-				love.graphics.setColor(0, 255, 0, 100)
+			if thing.lightBlockSprite then
+				love.graphics.setCanvas(lightBlockCanvas)
+				love.graphics.draw(thing.lightBlockSprite.sprite, thing.x, thing.y)
 			end
-			love.graphics.rectangle("fill", thing.x, thing.y, thing.width, thing.height)
-			love.graphics.setColor(255,255,255,255)
 		end
 
-		-- Draw the interaction indicator
+		-- Render the diffuse canvas using the dynamic light shader
 
-		if layer == 5 and data.state == 'game' and things and keyboard then
+		love.graphics.setCanvas(resultCanvas)
+		love.graphics.setShader(dynamicLightShader.shader)
+		dynamicLightShader.shader:send('lightBlockMap', lightBlockCanvas)
+		local viewport = getViewport()
+		love.graphics.draw(diffuseCanvas, viewport.x, viewport.y)
 
-			-- We want to draw the interaction indicator in the following situation:
-			-- 1. The current thing has an event with conditions
-			-- 2. One of those conditions is "playerPressedUse"
-			-- 3. All conditions are true except for the "playerPressedUse" condition
+		-- Draw the final canvas to the screen
 
-			local showIndicator
+		love.graphics.setShader()
+		love.graphics.setCanvas()
+		love.graphics.setBlendMode("alpha", "premultiplied")
+		local viewport = getViewport()
+		love.graphics.draw(resultCanvas, viewport.x, viewport.y)
+		love.graphics.setBlendMode("alpha")
 
-			if thing.events then
-				for _, e in ipairs(thing.events) do
-					if e.conditions then
+		for _, thing in ipairs(renderer.toDraw[layer]) do
 
-						if type(e.conditions.playerPressedUse) ~= nil then
-							showIndicator = true
-						end
+			-- Draw the interaction indicator
 
-						for condition, passed in pairs(e.conditions) do
-							if condition ~= 'playerPressedUse' then
-								showIndicator = showIndicator and passed
+			if layer == 5 and data.state == 'game' and things and keyboard then
+
+				-- We want to draw the interaction indicator in the following situation:
+				-- 1. The current thing has an event with conditions
+				-- 2. One of those conditions is "playerPressedUse"
+				-- 3. All conditions are true except for the "playerPressedUse" condition
+
+				local showIndicator
+
+				if thing.events then
+					for _, e in ipairs(thing.events) do
+						if e.conditions then
+
+							if type(e.conditions.playerPressedUse) ~= nil then
+								showIndicator = true
+							end
+
+							for condition, passed in pairs(e.conditions) do
+								if condition ~= 'playerPressedUse' then
+									showIndicator = showIndicator and passed
+								end
 							end
 						end
 					end
 				end
-			end
 
-			if showIndicator then
+				if showIndicator then
 
-				-- Get the current player position, as we will be drawing the interaction indicator
-				-- right above the player's head
+					-- Get the current player position, as we will be drawing the interaction
+					-- indicator right above the player's head
 
-				local playerX = things.getProperty('player', 'x')
-				local playerY = things.getProperty('player', 'y')
-				local playerYOffset = things.getProperty('player', 'drawYOffset')
-				local boxX = playerX + 3
-				local boxY = playerY + playerYOffset - 12
-				local boxWidth = 15
-				local boxHeight = 15
-				local labelX = playerX + 7
-				local labelY = playerY + playerYOffset - 12
+					local playerX = things.getProperty('player', 'x')
+					local playerY = things.getProperty('player', 'y')
+					local playerYOffset = things.getProperty('player', 'drawYOffset')
+					local boxX = playerX + 3
+					local boxY = playerY + playerYOffset - 12
+					local boxWidth = 15
+					local boxHeight = 15
+					local labelX = playerX + 7
+					local labelY = playerY + playerYOffset - 12
 
-				-- Get the keyboard shortcut for the use command so we can display it
+					-- Get the keyboard shortcut for the use command so we can display it
 
-				local shortcut = keyboard.keys.use
+					local shortcut = keyboard.keys.use
 
-				love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 2, 2)
-				love.graphics.setColor(50, 50, 50, 255)
-				love.graphics.print(shortcut, labelX, labelY)
-				love.graphics.setColor(255, 255, 255, 255)
+					love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 2, 2)
+					love.graphics.setColor(50, 50, 50, 255)
+					love.graphics.print(shortcut, labelX, labelY)
+					love.graphics.setColor(255, 255, 255, 255)
+				end
 			end
 		end
 	end
-end
+
+	-- Clear our toDraw list for the next pass
+
+	renderer.toDraw = {{}, {}, {}, {}, {}, {}}
 end
 
 function renderer.drawUI()
@@ -216,16 +138,9 @@ function renderer.drawUI()
 	local sprites = data.plugins.sprites
 	local constants = data.plugins.constants
 	local items = data.plugins.items
-	local viewport = data.plugins.viewport
 	local player = data.plugins.player
 	local clock = data.plugins.clock
-
-	local screenWidth = data.screenWidth
-	local screenHeight = data.screenHeight
-	if viewport then
-		screenWidth, screenHeight = viewport.getDimensions()
-		vx, vy = viewport.getPosition()
-	end
+	local viewport = getViewport()
 
 	-- If the currently selected inventory item is placeable, draw it's sprite at the current
 	-- mouse position
@@ -236,15 +151,14 @@ function renderer.drawUI()
 
 		if item and sprites and constants and item.placeable then
 			local sprite = sprites.getSprite(item.worldSprite)
-			local width, height = sprite:getDimensions()
-			local x = love.mouse.getX() - (width / 2)
-			local y = love.mouse.getY() - (height / 2)
+			local x = love.mouse.getX() - (sprite.width / 2)
+			local y = love.mouse.getY() - (sprite.height / 2)
 
 			local color = constants.translucentRed
-			if player and viewport then
+			if player then
 				local mousePoint = {
-					x = love.mouse.getX() + vx,
-					y = love.mouse.getY() + vy
+					x = love.mouse.getX() + viewport.x,
+					y = love.mouse.getY() + viewport.y
 				}
 				if player.inRange(mousePoint) then
 					color = constants.translucentWhite
@@ -252,7 +166,7 @@ function renderer.drawUI()
 			end
 
 			love.graphics.setColor(color)
-			love.graphics.draw(sprite, x, y)
+			love.graphics.draw(sprite.sprite, x, y)
 			love.graphics.setColor(constants.white)
 		end
 	end
@@ -283,8 +197,8 @@ function renderer.drawUI()
 		local height = 50
 		local totalWidth = (inventory.numberOfSlots * width) +
 		(inventory.numberOfSlots * margin) + margin
-		local startX = (screenWidth - totalWidth) / 2
-		local y = screenHeight - height - margin
+		local startX = (viewport.width - totalWidth) / 2
+		local y = viewport.height - height - margin
 
 		for i, slot in pairs(inventory.getSlots()) do
 
@@ -310,7 +224,7 @@ function renderer.drawUI()
 				if item then
 					local sprite = sprites.getSprite(item.sprite)
 					if sprite then
-						love.graphics.draw(sprite, x, y)
+						love.graphics.draw(sprite.sprite, x, y)
 					end
 				end
 			end

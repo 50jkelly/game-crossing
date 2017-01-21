@@ -1,45 +1,41 @@
-local plugin = {} local pluginData = {}
+local viewport = {}
 
 -- Hooks
 
-function plugin.initialise()
-	pluginData.x = 0
-	pluginData.y = 0
-	pluginData.width = 800
-	pluginData.height = 600
+function viewport.initialise()
+	viewport.x = 0
+	viewport.y = 0
+	viewport.width = 800
+	viewport.height = 600
 end
 
-function plugin.update()
-	local things = data.plugins.things
-	if things then
-		local pd = things.getThing('player')
-		pluginData.x = pd.x - (pluginData.width / 2) + pd.width + pd.drawXOffset
-		pluginData.y = pd.y - (pluginData.height / 2) + pd.height + pd.drawYOffset
+function viewport.update()
+	local player = data.plugins.player
+	if player then
+		local playerRect = player.getRect()
+
+		viewport.x = playerRect.x +
+			playerRect.width -
+			(viewport.width / 2)
+
+		viewport.y = playerRect.y +
+			playerRect.height -
+			(viewport.height / 2)
 	end
 end
 
-function plugin.preDraw()
+function viewport.preDraw()
 	love.graphics.push()
-	love.graphics.translate(-pluginData.x, -pluginData.y)
+	love.graphics.translate(-viewport.x, -viewport.y)
 end
 
-function plugin.postDraw()
+function viewport.postDraw()
 	love.graphics.pop()
 end
 
 function love.resize(width, height)
-	pluginData.width = width
-	pluginData.height = height
+	viewport.width = width
+	viewport.height = height
 end
 
--- Functions
-
-function plugin.getPosition()
-	return pluginData.x, pluginData.y
-end
-
-function plugin.getDimensions()
-	return pluginData.width, pluginData.height
-end
-
-return plugin
+return viewport

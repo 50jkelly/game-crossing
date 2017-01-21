@@ -7,7 +7,7 @@ local hoursInDay = 24
 local sinceLastUpdate = 0
 
 local time = {
-	hours=0,
+	hours=12,
 	minutes=0,
 	seconds=0
 }

@@ -85,16 +85,34 @@ function player.inRange(point2, range)
 	if things then
 		local px = things.getProperty('player', 'x')
 		local py = things.getProperty('player', 'y')
-		local pwidth = things.getProperty('player', 'width')
-		local pheight = things.getProperty('player', 'height')
+		local pwidth = things.getProperty('player', 'width') or 0
+		local pheight = things.getProperty('player', 'height') or 0
 		local range = range or things.getProperty('player', 'placementRange')
 
-		local point1 = {
-			x = px + pwidth / 2,
-			y = py + pheight / 2
-		}
+		if px and py and pwidth and pheight then
+			local point1 = {
+				x = px + pwidth / 2,
+				y = py + pheight / 2
+			}
+			return getDistance(point1, point2) <= range
+		end
+	end
+end
 
-		return getDistance(point1, point2) <= range
+function player.getRect()
+	local things = data.plugins.things
+	if things then
+		local x = things.getProperty('player', 'x')
+		local y = things.getProperty('player', 'y')
+		local width = things.getProperty('player', 'width')
+		local height = things.getProperty('player', 'height')
+
+		return {
+			x = x,
+			y = y,
+			width = width,
+			height = height
+		}
 	end
 end
 

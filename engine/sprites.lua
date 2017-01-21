@@ -6,9 +6,16 @@ function sprites.loadGraphics()
 	loadSprite('itemBook', 'images/item_book.png')
 	loadSprite('itemSeed', 'images/item_seed.png')
 	loadSprite('worldItemSeed', 'images/worldItemSeed.png')
-	loadSprite('tree1', 'images/tree1.png')
 	loadSprite('plant_1', 'images/plant_1.png')
 	loadSprite('grass', 'images/grass.png')
+
+	loadSprite('tree1Bottom', 'images/trees/tree1Bottom.png')
+	loadSprite('tree1Top', 'images/trees/tree1Top.png')
+
+	-- Lightmaps
+
+	loadSprite('playerLight', 'images/lightmaps/playerLight.png')
+	loadSprite('tree1TopLightBlock', 'images/lightmaps/tree1TopLightBlock.png')
 
 	loadSprite('player_walk_down_1', 'images/player_walk_down_1.png')
 	loadSprite('player_walk_down_2', 'images/player_walk_down_2.png')
@@ -49,7 +56,14 @@ function sprites.getSprite(id)
 end
 
 function loadSprite(id, path)
-	spritesTable[id] = love.graphics.newImage(path)
+	local sprite = love.graphics.newImage(path)
+	local width, height = sprite:getDimensions()
+
+	spritesTable[id] = {
+		sprite = sprite,
+		width = width,
+		height = height
+	}
 end
 
 return sprites

@@ -80,7 +80,9 @@ function printTable(table, p)
 
 		-- Finally write the index and value
 
-		if value then io.write(prefix..'['..i..'] = '..value..'\n') end
+		if value and type(value) ~= 'userdata' then
+			io.write(prefix..'['..i..'] = '..value..'\n')
+		end
 	end
 end
 

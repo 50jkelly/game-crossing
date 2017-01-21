@@ -9,6 +9,7 @@ data.plugins = {
 	viewport = require 'engine.viewport',
 	sprites = require 'engine.sprites',
 	renderer = require 'engine.renderer',
+	shaders = require 'engine.shaders',
 	keyboard = require 'engine.keyboard',
 	mouse = require 'engine.mouse',
 	collision = require "engine.collision",
@@ -23,10 +24,12 @@ data.plugins = {
 	player = require 'scripts.player',
 	events = require 'scripts.events',
 	conditions = require 'scripts.conditions',
-	items = require 'scripts.items'
+	items = require 'scripts.items',
+	dayNightCycle = require 'scripts.dayNightCycle'
 }
 
 function love.load()
+	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 	callHook('plugins', 'initialise')
 	callHook('plugins', 'loadGraphics')
 	callHook('plugins', 'assetsLoaded')
@@ -74,14 +77,35 @@ end
 
 function overlapping(rect1, rect2, margin)
 	local m = margin or 0
-	return not (rect1.x + rect1.width + m < rect2.x
-		or rect2.x + rect2.width + m < rect1.x
-		or rect1.y + rect1.height + m < rect2.y
-		or rect2.y + rect2.height + m < rect1.y)
+	if rect1.width and rect1.height and rect2.width and rect2.height then
+		return not (rect1.x + rect1.width + m < rect2.x
+			or rect2.x + rect2.width + m < rect1.x
+			or rect1.y + rect1.height + m < rect2.y
+			or rect2.y + rect2.height + m < rect1.y)
+	end
 end
 
 function getDistance(point1, point2)
 	local a = point2.x - point1.x
 	local b = point2.y - point1.y
 	return (a * a) + (b * b)
+end
+
+function getViewport()
+	local width = love.graphics.getWidth()
+	local height = love.graphics.getHeight()
+	local x = 0
+	local y = 0
+
+	if data.plugins.viewport then
+		x = data.plugins.viewport.x
+		y = data.plugins.viewport.y
+	end
+
+	return {
+		width = width,
+		height = height,
+		x = x,
+		y = y
+	}
 end
