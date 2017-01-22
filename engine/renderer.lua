@@ -1,6 +1,26 @@
 local renderer = {}
 renderer.toDraw = {{}, {}, {}, {}, {}, {}}
 
+function initialiseCanvas(canvas, color)
+	local oldMode, oldAlphaMode = love.graphics.getBlendMode()
+	local oldR, oldG, oldB, oldA = love.graphics.getColor()
+	local oldCanvas = love.graphics.getCanvas()
+
+	love.graphics.setCanvas(canvas)
+	love.graphics.setBlendMode('alpha')
+	love.graphics.setColor(color)
+	local viewport = getViewport()
+	love.graphics.rectangle('fill',
+		viewport.x,
+		viewport.y,
+		viewport.width,
+		viewport.height)
+
+	love.graphics.setColor(oldR, oldG, oldB, oldA)
+	love.graphics.setBlendMode(oldMode, oldAlphaMode)
+	love.graphics.setCanvas(oldCanvas)
+end
+
 function renderer.draw()
 
 	-- Get plugins
@@ -19,18 +39,12 @@ function renderer.draw()
 	-- Set up canvases
 
 	local diffuseCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
+	local lightCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
 	local lightBlockCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
 	local resultCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
 
-	love.graphics.setCanvas(lightBlockCanvas)
-	love.graphics.setBlendMode('alpha')
-	love.graphics.setColor(constants.white)
-	local viewport = getViewport()
-	love.graphics.rectangle('fill',
-		viewport.x,
-		viewport.y,
-		screenWidth,
-		screenHeight)
+	initialiseCanvas(lightCanvas, constants.black)
+	initialiseCanvas(lightBlockCanvas, constants.white)
 
 	-- Set up shaders
 
@@ -45,6 +59,20 @@ function renderer.draw()
 			love.graphics.setBlendMode('alpha')
 			love.graphics.draw(thing.sprite.sprite, thing.x, thing.y)
 
+			if thing.lightSprite then
+				love.graphics.setCanvas(lightCanvas)
+
+				local lightX = thing.x +
+					(thing.width / 2) -
+					(thing.lightSprite.width / 2)
+
+				local lightY = thing.y +
+					(thing.height / 2)  -
+					(thing.lightSprite.height / 2)
+
+				love.graphics.draw(thing.lightSprite.sprite, lightX, lightY)
+			end
+
 			if thing.lightBlockSprite then
 				love.graphics.setCanvas(lightBlockCanvas)
 				love.graphics.draw(thing.lightBlockSprite.sprite, thing.x, thing.y)
@@ -55,7 +83,10 @@ function renderer.draw()
 
 		love.graphics.setCanvas(resultCanvas)
 		love.graphics.setShader(dynamicLightShader.shader)
+
+		dynamicLightShader.shader:send('lightMap', lightCanvas)
 		dynamicLightShader.shader:send('lightBlockMap', lightBlockCanvas)
+
 		local viewport = getViewport()
 		love.graphics.draw(diffuseCanvas, viewport.x, viewport.y)
 

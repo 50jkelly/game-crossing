@@ -4,6 +4,7 @@ local player = {
 			local sprites = data.plugins.sprites
 
 			thing.sprite = sprites.getSprite('player_walk_down_1')
+			thing.lightSprite = sprites.getSprite('playerLight')
 			thing.width, thing.height = thing.sprite.sprite:getDimensions()
 			thing.blockedStates = {}
 			thing.frameCounter = 1
