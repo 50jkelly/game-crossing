@@ -6,15 +6,16 @@ function sprites.loadGraphics()
 	loadSprite('itemBook', 'images/item_book.png')
 	loadSprite('itemSeed', 'images/item_seed.png')
 	loadSprite('worldItemSeed', 'images/worldItemSeed.png')
-	loadSprite('plant_1', 'images/plant_1.png')
-	loadSprite('grass1', 'images/grass1.png')
 
+	loadSprite('grass1', 'images/grass1.png')
+	loadSprite('flower1', 'images/flower1.png')
 	loadSprite('tree1Bottom', 'images/trees/tree1Bottom.png')
 	loadSprite('tree1Top', 'images/trees/tree1Top.png')
 
 	-- Lightmaps
 
 	loadSprite('playerLight', 'images/lightmaps/playerLight.png')
+	loadSprite('flower1Light', 'images/lightmaps/flower1Light.png')
 	loadSprite('tree1TopLightBlock', 'images/lightmaps/tree1TopLightBlock.png')
 
 	loadSprite('player_walk_down_1', 'images/player_walk_down_1.png')

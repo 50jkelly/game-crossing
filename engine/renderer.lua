@@ -2,6 +2,8 @@ local renderer = {}
 renderer.toDraw = {{}, {}, {}, {}, {}, {}}
 
 function initialiseCanvas(canvas, color)
+	local mode = mode or 'alpha'
+	local alpha = alpha or 'alphamultiply'
 	local oldMode, oldAlphaMode = love.graphics.getBlendMode()
 	local oldR, oldG, oldB, oldA = love.graphics.getColor()
 	local oldCanvas = love.graphics.getCanvas()
@@ -61,16 +63,32 @@ function renderer.draw()
 
 			if thing.lightSprite then
 				love.graphics.setCanvas(lightCanvas)
+				love.graphics.setBlendMode('add')
 
-				local lightX = thing.x +
-					(thing.width / 2) -
-					(thing.lightSprite.width / 2)
+				local lightX, lightY
 
-				local lightY = thing.y +
-					(thing.height / 2)  -
-					(thing.lightSprite.height / 2)
+				if thing.lightX then
+					lightX = thing.lightX +
+						thing.x -
+						(thing.lightSprite.width / 2)
+				else
+					lightX = thing.x +
+						(thing.width / 2) -
+						(thing.lightSprite.width / 2)
+				end
+
+				if thing.lightY then
+					lightY = thing.lightY +
+						thing.y -
+						(thing.lightSprite.height / 2)
+				else
+					lightY = thing.y +
+						(thing.height / 2)  -
+						(thing.lightSprite.height / 2)
+				end
 
 				love.graphics.draw(thing.lightSprite.sprite, lightX, lightY)
+				love.graphics.setBlendMode('alpha')
 			end
 
 			if thing.lightBlockSprite then

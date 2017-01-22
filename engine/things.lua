@@ -6,7 +6,8 @@ local lastId = nil
 local expand = {
 	player = require 'scripts.player',
 	grass = require 'scripts.grass',
-	tree = require 'scripts.trees'
+	tree = require 'scripts.trees',
+	flower = require 'scripts.flowers'
 }
 
 -- Hooks
@@ -19,13 +20,18 @@ function things.loadGame()
 	rawData = data.plugins.persistence.read('saves/things.lua')
 
 	for id, thing in pairs(rawData) do
+		if string.match(id, 'needsid') then
+			id = things.newId()
+		end
 		expand[thing.type].expand[thing.subtype](thing, id, thingsTable)
 	end
 end
 
 function things.saveGame()
 	for id, thing in pairs(thingsTable) do
-		expand[thing.type].condense[thing.subtype](thing, id, rawData)
+		if thing.type and thing.subtype then
+			expand[thing.type].condense[thing.subtype](thing, id, rawData)
+		end
 	end
 	data.plugins.persistence.write(rawData, 'saves/things.lua')
 end
