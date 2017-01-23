@@ -8,6 +8,7 @@ function sprites.loadGraphics()
 	loadSprite('worldItemSeed', 'images/worldItemSeed.png')
 
 	loadSprite('grass1', 'images/grass1.png')
+	loadSprite('flower1start', 'images/flower1start.png')
 	loadSprite('flower1', 'images/flower1.png')
 	loadSprite('tree1Bottom', 'images/trees/tree1Bottom.png')
 	loadSprite('tree1Top', 'images/trees/tree1Top.png')

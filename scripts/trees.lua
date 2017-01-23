@@ -1,45 +1,41 @@
-local trees = {
-	expand = {
-		tree1 = function(treeBottom, id, thingsTable)
-			local sprites = data.plugins.sprites
+local trees = {}
 
-			-- Load in the tree bottom
+function trees.load(treeBottom, thingsTable)
+	local sprites = data.plugins.sprites
 
-			treeBottom.sprite = sprites.getSprite('tree1Bottom')
-			treeBottom.width = treeBottom.sprite.width
-			treeBottom.height = treeBottom.sprite.height
-			treeBottom.collides = true
-			treeBottom.layer = 5
+	-- Load in the tree bottom
 
-			thingsTable[id] = treeBottom
+	treeBottom.sprite = sprites.getSprite('tree1Bottom')
+	treeBottom.width = treeBottom.sprite.width
+	treeBottom.height = treeBottom.sprite.height
+	treeBottom.collides = true
+	treeBottom.layer = 5
 
-			-- Generate a tree top
+	table.insert(thingsTable, treeBottom)
 
-			local treeTopSprite = sprites.getSprite('tree1Top') 
-			local treeTop = {
-				sprite = treeTopSprite,
-				width = treeTopSprite.width,
-				height = treeTopSprite.height,
-				lightBlockSprite = sprites.getSprite('tree1TopLightBlock'),
-				collides = false,
-				x = treeBottom.x - 60,
-				y = treeBottom.y - 180,
-				layer = 6
-			}
+	-- Generate a tree top
 
-			local id = data.plugins.things.newId()
-			thingsTable[id] = treeTop
-		end
-	},
-	condense = {
-		tree1 = function(thing, id, rawData)
-			rawData[id] = {
-				type = thing.type,
-				subtype = thing.subtype,
-				x = thing.x,
-				y = thing.y
-			}
-		end
+	local treeTopSprite = sprites.getSprite('tree1Top') 
+	local treeTop = {
+		sprite = treeTopSprite,
+		width = treeTopSprite.width,
+		height = treeTopSprite.height,
+		lightBlockSprite = sprites.getSprite('tree1TopLightBlock'),
+		collides = false,
+		x = treeBottom.x - 60,
+		y = treeBottom.y - 180,
+		layer = 6
 	}
-}
+
+	table.insert(thingsTable, treeTop)
+end
+
+function trees.save(thing, rawData)
+	table.insert(rawData, {
+		type = thing.type,
+		x = thing.x,
+		y = thing.y
+	})
+end
+
 return trees

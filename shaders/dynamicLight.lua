@@ -22,7 +22,7 @@ function lights.preDraw()
 	local ambientColor = {1, 1, 1, 0}
 
 	if dayNightCycle then
-		ambientColor = dayNightCycle.ambientColor
+		ambientColor = dayNightCycle.ambientColor or {1, 1, 1, 0}
 	end
 
 	lights.shader:send('ambientColor', ambientColor)

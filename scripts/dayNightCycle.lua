@@ -1,63 +1,67 @@
 local dayNightCycle = {}
 
-local sunrise = 'sunrise'
-local day = 'day'
-local sunset = 'sunset'
-local night = 'night'
-
-local times = {}
-times[6 * 60] = sunrise
-times[8 * 60] = day
-times[20 * 60] = sunset
-times[22 * 60] = night
-
-local minutes = {}
-minutes[sunrise] = 6 * 60
-minutes[day] = 8 * 60
-minutes[sunset] = 20 * 60
-minutes[night] = 22 * 60
-
-local nextTime = {}
-nextTime[sunrise] = day
-nextTime[day] = sunset
-nextTime[sunset] = night
-nextTime[night] = sunrise
-
-local colors = {}
-colors[sunrise] = {.3, .3, .7, 0}
-colors[day] = {1., 1., 1., 0}
-colors[sunset] = {1., 1., 1., 0}
-colors[night] = {.3, .3, .7, 0}
-
--- Hooks
-
-function dayNightCycle.initialise()
-	dayNightCycle.timeOfDay = day
-	dayNightCycle.ambientColor = {
-		colors[day][1],
-		colors[day][2],
-		colors[day][3],
-		colors[day][4]
-	}
-end
-
 function dayNightCycle.update()
 	local clock = data.plugins.clock
 	if clock then
-		local time = clock.getTime(true)
-		local mins = time.hours * 60 + time.minutes
 
-		dayNightCycle.timeOfDay = times[mins] or dayNightCycle.timeOfDay
+		-- The ambient light level should be a function of the total minutes elapsed
+		-- in the current day
 
-		local nextTod = nextTime[dayNightCycle.timeOfDay]
-		local nextMinutes = minutes[nextTod]
-		local nextColor = colors[nextTod]
-		local remaining = nextMinutes - mins
+		local minutes = clock.getMinutes('day')
 
-		for i=1, 3, 1 do
-			local unit = (nextColor[i] - dayNightCycle.ambientColor[i]) / remaining
-			dayNightCycle.ambientColor[i] = dayNightCycle.ambientColor[i] + unit
+		-- The function involves the degree to which the current minutes exceeds
+		-- particular thresholds throughout the day
+
+		local sunrise = 6 * 60
+		local sunset = 20 * 60
+
+		-- The function also involves the duration of transition from one color to
+		-- another once the thresholds have been exceeded
+
+		local sunrise_duration = 2 * 60
+		local sunset_duration = 2 * 60
+
+		-- Of course, the function is primarily concerned with the color of the
+		-- ambient lighting during the day and the night
+
+		local day_color = {1, 1, 1, 0}
+		local night_color = {.3, .3, .7, 0}
+
+		dayNightCycle.ambientColor = 
+			calculate_transition(minutes, sunrise, sunrise_duration, night_color, day_color) or
+			calculate_transition(minutes, sunset, sunset_duration, day_color, night_color) or
+			dayNightCycle.ambientColor or
+			calculate_default_color(minutes, sunrise, sunset, day_color, night_color)
+	end
+end
+
+function calculate_transition(minutes, transition, duration, start_color, target_color)
+	local result_color = {}
+
+	for i, _ in ipairs(target_color) do
+		local transition_progress = minutes - transition
+
+		if transition_progress <= 0 then
+			return nil
 		end
+
+		if transition_progress > duration then
+			return nil
+		end
+
+		local color_difference = target_color[i] - start_color[i]
+		transition_progress = transition_progress / duration
+		result_color[i] = start_color[i] + color_difference * transition_progress
+	end
+
+	return result_color
+end
+
+function calculate_default_color(minutes, sunrise, sunset, day_color, night_color)
+	if minutes > sunrise and minutes < sunset then
+		return day_color
+	else
+		return night_color
 	end
 end
 

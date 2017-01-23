@@ -1,28 +1,27 @@
-local flowers = {
-	expand = {
-		flower1 = function(thing, id, thingsTable)
-			local sprites = data.plugins.sprites
+local flowers = {}
 
-			thing.sprite = sprites.getSprite('flower1')
-			thing.lightSprite = sprites.getSprite('flower1Light')
-			thing.lightX = 10
-			thing.lightY = 8
-			thing.width = thing.sprite.width
-			thing.height = thing.sprite.height
-			thing.layer = 2
+function flowers.load(thing, thingsTable)
+	local sprites = data.plugins.sprites
 
-			thingsTable[id] = thing
-		end
-	},
-	condense = {
-		flower1 = function(thing, id, rawData)
-			rawData[id] = {
-				type = thing.type,
-				subtype = thing.subtype,
-				x = thing.x,
-				y = thing.y
-			}
-		end
-	}
-}
+	thing.sprite = sprites.getSprite('flower1')
+	thing.lightSprite = sprites.getSprite('flower1Light')
+	thing.lightY = 8
+	thing.width = thing.sprite.width
+	thing.height = thing.sprite.height
+	thing.layer = 2
+	thing.events = { 'pickup' }
+	thing.pickupItems = { 'seed', 'seed' }
+
+	table.insert(thingsTable, thing)
+end
+
+
+function flowers.save(thing, rawData)
+	table.insert(rawData, {
+		type = thing.type,
+		x = thing.x,
+		y = thing.y
+	})
+end
+
 return flowers

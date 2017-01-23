@@ -2,14 +2,14 @@ local plugin = {}
 local pluginData = {
 	player = {
 		move_up = {
-			 'player_walk_up_1',
-			 'player_walk_up_2',
-			 'player_walk_up_3',
-			 'player_walk_up_4',
-			 'player_walk_up_5',
-			 'player_walk_up_6',
-			 'player_walk_up_7',
-			 'player_walk_up_8'
+			'player_walk_up_1',
+			'player_walk_up_2',
+			'player_walk_up_3',
+			'player_walk_up_4',
+			'player_walk_up_5',
+			'player_walk_up_6',
+			'player_walk_up_7',
+			'player_walk_up_8'
 		},
 		move_down = {
 			'player_walk_down_1',
@@ -50,36 +50,34 @@ local pluginData = {
 -- Public functions
 
 function plugin.cycle(thing, dt)
-	if thing.id == 'player' then
 
-		-- Initialise data
+	-- Initialise data
 
-		thing.frameCounter = thing.frameCounter or 0
-		thing.timeSinceLastFrame = thing.timeSinceLastFrame or 0
+	thing.frameCounter = thing.frameCounter or 0
+	thing.timeSinceLastFrame = thing.timeSinceLastFrame or 0
 
-		-- Maintain time since last player animation update
+	-- Maintain time since last player animation update
 
-		thing.timeSinceLastFrame = thing.timeSinceLastFrame + dt
+	thing.timeSinceLastFrame = thing.timeSinceLastFrame + dt
 
-		-- Cycle the frames
+	-- Cycle the frames
 
-		if thing.timeSinceLastFrame > 1 / thing.framesPerSecond then
-			thing.timeSinceLastFrame = 0
-			thing.frameCounter = thing.frameCounter + 1
-			if thing.frameCounter > table.getn(pluginData[thing.id][thing.animationState]) then
-				thing.frameCounter = 1
-			end
-
-			-- Set the current sprite
-
-			local sprites = data.plugins.sprites
-			local spriteId = pluginData
-				[thing.id]
-				[thing.animationState]
-				[thing.frameCounter]
-
-			thing.sprite = sprites.getSprite(spriteId)
+	if thing.timeSinceLastFrame > 1 / thing.framesPerSecond then
+		thing.timeSinceLastFrame = 0
+		thing.frameCounter = thing.frameCounter + 1
+		if thing.frameCounter > table.getn(pluginData[thing.type][thing.animationState]) then
+			thing.frameCounter = 1
 		end
+
+		-- Set the current sprite
+
+		local sprites = data.plugins.sprites
+		local spriteId = pluginData
+		[thing.type]
+		[thing.animationState]
+		[thing.frameCounter]
+
+		thing.sprite = sprites.getSprite(spriteId)
 	end
 end
 

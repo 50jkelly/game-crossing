@@ -33,9 +33,4 @@ function viewport.postDraw()
 	love.graphics.pop()
 end
 
-function love.resize(width, height)
-	viewport.width = width
-	viewport.height = height
-end
-
 return viewport

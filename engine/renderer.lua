@@ -1,26 +1,31 @@
 local renderer = {}
 renderer.toDraw = {{}, {}, {}, {}, {}, {}}
 
-function initialiseCanvas(canvas, color)
-	local mode = mode or 'alpha'
-	local alpha = alpha or 'alphamultiply'
-	local oldMode, oldAlphaMode = love.graphics.getBlendMode()
-	local oldR, oldG, oldB, oldA = love.graphics.getColor()
-	local oldCanvas = love.graphics.getCanvas()
-
+function clearCanvas(canvas, color)
+	local viewport = getViewport()
 	love.graphics.setCanvas(canvas)
 	love.graphics.setBlendMode('alpha')
 	love.graphics.setColor(color)
-	local viewport = getViewport()
-	love.graphics.rectangle('fill',
-		viewport.x,
-		viewport.y,
-		viewport.width,
-		viewport.height)
+	love.graphics.rectangle('fill', viewport.x, viewport.y, viewport.width, viewport.height)
+end
 
-	love.graphics.setColor(oldR, oldG, oldB, oldA)
-	love.graphics.setBlendMode(oldMode, oldAlphaMode)
-	love.graphics.setCanvas(oldCanvas)
+function useCanvas(canvas, mode, func, alpha)
+	love.graphics.setCanvas(canvas)
+	love.graphics.setBlendMode(mode, (alpha or nil))
+	func()
+	love.graphics.setBlendMode('alpha')
+	love.graphics.setShader()
+	love.graphics.setCanvas()
+end
+
+function renderer.initialise()
+	local viewport = getViewport()
+	local shaders = data.plugins.shaders
+	renderer.mainCanvas = love.graphics.newCanvas(viewport.width, viewport.height)
+	renderer.diffuseCanvas = love.graphics.newCanvas(viewport.width, viewport.height)
+	renderer.lightCanvas = love.graphics.newCanvas(viewport.width, viewport.height)
+	renderer.lightBlockCanvas = love.graphics.newCanvas(viewport.width, viewport.height)
+	renderer.dynamicLightShader = shaders.dynamicLight
 end
 
 function renderer.draw()
@@ -30,149 +35,45 @@ function renderer.draw()
 	local things = data.plugins.things
 	local keyboard = data.plugins.keyboard
 	local sprites = data.plugins.sprites
-	local shaders = data.plugins.shaders
 	local constants = data.plugins.constants
-
-	-- Define variables
-
-	local screenWidth = love.graphics.getWidth()
-	local screenHeight = love.graphics.getHeight()
-
-	-- Set up canvases
-
-	local diffuseCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
-	local lightCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
-	local lightBlockCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
-	local resultCanvas = love.graphics.newCanvas(screenWidth, screenHeight)
-
-	initialiseCanvas(lightCanvas, constants.black)
-	initialiseCanvas(lightBlockCanvas, constants.white)
-
-	-- Set up shaders
-
-	local dynamicLightShader = shaders.dynamicLight or { shader = nil }
+	local viewport = getViewport()
 
 	-- Start drawing
 
-	for layer=1, table.getn(renderer.toDraw), 1 do
+	clearCanvas(renderer.lightCanvas, constants.black)
+	clearCanvas(renderer.lightBlockCanvas, constants.white)
 
+	for layer=1, #renderer.toDraw, 1 do
 		for _, thing in ipairs(renderer.toDraw[layer]) do
-			love.graphics.setCanvas(diffuseCanvas)
-			love.graphics.setBlendMode('alpha')
-			love.graphics.draw(thing.sprite.sprite, thing.x, thing.y)
+			useCanvas(renderer.diffuseCanvas, 'alpha', function()
+				love.graphics.draw(thing.sprite.sprite, thing.x, thing.y)
+			end)
 
-			if thing.lightSprite then
-				love.graphics.setCanvas(lightCanvas)
-				love.graphics.setBlendMode('add')
-
-				local lightX, lightY
-
-				if thing.lightX then
-					lightX = thing.lightX +
-						thing.x -
-						(thing.lightSprite.width / 2)
-				else
-					lightX = thing.x +
-						(thing.width / 2) -
-						(thing.lightSprite.width / 2)
+			useCanvas(renderer.lightCanvas, 'add', function()
+				if thing.lightSprite then
+					love.graphics.draw(
+					thing.lightSprite.sprite,
+					thing.x + thing.width / 2 - thing.lightSprite.width / 2 + (thing.lightOffsetX or 0),
+					thing.y + thing.height / 2 - thing.lightSprite.height / 2 + (thing.lightOffsetY or 0))
 				end
+			end)
 
-				if thing.lightY then
-					lightY = thing.lightY +
-						thing.y -
-						(thing.lightSprite.height / 2)
-				else
-					lightY = thing.y +
-						(thing.height / 2)  -
-						(thing.lightSprite.height / 2)
+			useCanvas(renderer.lightBlockCanvas, 'alpha', function()
+				if thing.lightBlockSprite then
+					love.graphics.draw(thing.lightBlockSprite.sprite, thing.x, thing.y)
 				end
-
-				love.graphics.draw(thing.lightSprite.sprite, lightX, lightY)
-				love.graphics.setBlendMode('alpha')
-			end
-
-			if thing.lightBlockSprite then
-				love.graphics.setCanvas(lightBlockCanvas)
-				love.graphics.draw(thing.lightBlockSprite.sprite, thing.x, thing.y)
-			end
+			end)
 		end
 
 		-- Render the diffuse canvas using the dynamic light shader
 
-		love.graphics.setCanvas(resultCanvas)
-		love.graphics.setShader(dynamicLightShader.shader)
+		renderer.dynamicLightShader.shader:send('lightMap', renderer.lightCanvas)
+		renderer.dynamicLightShader.shader:send('lightBlockMap', renderer.lightBlockCanvas)
+		useCanvas(nil, 'alpha', function()
+			love.graphics.setShader(renderer.dynamicLightShader.shader)
+			love.graphics.draw(renderer.diffuseCanvas, viewport.x, viewport.y)
+		end, 'premultiplied')
 
-		dynamicLightShader.shader:send('lightMap', lightCanvas)
-		dynamicLightShader.shader:send('lightBlockMap', lightBlockCanvas)
-
-		local viewport = getViewport()
-		love.graphics.draw(diffuseCanvas, viewport.x, viewport.y)
-
-		-- Draw the final canvas to the screen
-
-		love.graphics.setShader()
-		love.graphics.setCanvas()
-		love.graphics.setBlendMode("alpha", "premultiplied")
-		local viewport = getViewport()
-		love.graphics.draw(resultCanvas, viewport.x, viewport.y)
-		love.graphics.setBlendMode("alpha")
-
-		for _, thing in ipairs(renderer.toDraw[layer]) do
-
-			-- Draw the interaction indicator
-
-			if layer == 5 and data.state == 'game' and things and keyboard then
-
-				-- We want to draw the interaction indicator in the following situation:
-				-- 1. The current thing has an event with conditions
-				-- 2. One of those conditions is "playerPressedUse"
-				-- 3. All conditions are true except for the "playerPressedUse" condition
-
-				local showIndicator
-
-				if thing.events then
-					for _, e in ipairs(thing.events) do
-						if e.conditions then
-
-							if type(e.conditions.playerPressedUse) ~= nil then
-								showIndicator = true
-							end
-
-							for condition, passed in pairs(e.conditions) do
-								if condition ~= 'playerPressedUse' then
-									showIndicator = showIndicator and passed
-								end
-							end
-						end
-					end
-				end
-
-				if showIndicator then
-
-					-- Get the current player position, as we will be drawing the interaction
-					-- indicator right above the player's head
-
-					local playerX = things.getProperty('player', 'x')
-					local playerY = things.getProperty('player', 'y')
-					local playerYOffset = things.getProperty('player', 'drawYOffset')
-					local boxX = playerX + 3
-					local boxY = playerY + playerYOffset - 12
-					local boxWidth = 15
-					local boxHeight = 15
-					local labelX = playerX + 7
-					local labelY = playerY + playerYOffset - 12
-
-					-- Get the keyboard shortcut for the use command so we can display it
-
-					local shortcut = keyboard.keys.use
-
-					love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 2, 2)
-					love.graphics.setColor(50, 50, 50, 255)
-					love.graphics.print(shortcut, labelX, labelY)
-					love.graphics.setColor(255, 255, 255, 255)
-				end
-			end
-		end
 	end
 
 	-- Clear our toDraw list for the next pass
@@ -191,17 +92,16 @@ function renderer.drawUI()
 	local clock = data.plugins.clock
 	local viewport = getViewport()
 
-	-- If the currently selected inventory item is placeable, draw it's sprite at the current
-	-- mouse position
+	-- If the currently selected inventory item is placeable, draw it's sprite at
+	-- the current mouse position
 
 	if inventory and items then
 		local slot = inventory.getSlots()[inventory.highlightedSlot] or {}
 		local item = items[slot.item]
 
-		if item and sprites and constants and item.placeable then
-			local sprite = sprites.getSprite(item.worldSprite)
-			local x = love.mouse.getX() - (sprite.width / 2)
-			local y = love.mouse.getY() - (sprite.height / 2)
+		if item and item.worldSprite and constants and item.placeable then
+			local x = love.mouse.getX() - (item.worldSprite.width / 2)
+			local y = love.mouse.getY() - (item.worldSprite.height / 2)
 
 			local color = constants.translucentRed
 			if player then
@@ -215,7 +115,7 @@ function renderer.drawUI()
 			end
 
 			love.graphics.setColor(color)
-			love.graphics.draw(sprite.sprite, x, y)
+			love.graphics.draw(item.worldSprite.sprite, x, y)
 			love.graphics.setColor(constants.white)
 		end
 	end
@@ -271,10 +171,7 @@ function renderer.drawUI()
 			if items and sprites then
 				local item = items[slot.item]
 				if item then
-					local sprite = sprites.getSprite(item.sprite)
-					if sprite then
-						love.graphics.draw(sprite.sprite, x, y)
-					end
+					love.graphics.draw(item.sprite.sprite, x, y)
 				end
 			end
 

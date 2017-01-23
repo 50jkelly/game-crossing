@@ -25,11 +25,26 @@ keyboard.keys = {
 -- Hooks
 
 function keyboard.update()
+	local things = data.plugins.things
+	local player = data.plugins.player
+
+	local keyDown
 	for key, _ in pairs(keyboard.keys) do
 		if love.keyboard.isDown(keyboard.keys[key]) then
-			keyboard.currentKeyDown = key
-			callHook('plugins', 'keyDown')
+			keyDown = key
+			break
 		end
+	end
+
+	local isMovementKey =
+		keyDown == 'up'
+		or keyDown == 'down'
+		or keyDown == 'left'
+		or keyDown == 'right'
+
+	if data.state == 'game' and things and isMovementKey then
+		things.setProperty(player.id, 'moveState', 'move_'..keyDown)
+		things.setProperty(player.id, 'animationState', 'move_'..keyDown)
 	end
 end
 

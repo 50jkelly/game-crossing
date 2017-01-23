@@ -21,11 +21,16 @@ data.plugins = {
 	clock = require 'engine.clock',
 
 	constants = require 'scripts.constants',
-	player = require 'scripts.player',
 	events = require 'scripts.events',
 	conditions = require 'scripts.conditions',
 	items = require 'scripts.items',
-	dayNightCycle = require 'scripts.dayNightCycle'
+	dayNightCycle = require 'scripts.dayNightCycle',
+
+	player = require 'scripts.player',
+	grass = require 'scripts.grass',
+	trees = require 'scripts.trees',
+	flowers = require 'scripts.flowers',
+	juvenile_flowers = require 'scripts.juvenile_flowers'
 }
 
 function love.load()
@@ -44,6 +49,12 @@ function love.draw()
 	callHook('plugins', 'draw')
 	callHook('plugins', 'postDraw')
 	callHook('plugins', 'drawUI')
+end
+
+function love.resize(width, height)
+	data.plugins.viewport.width = width
+	data.plugins.viewport.height = height
+	data.plugins.renderer.initialise()
 end
 
 function callHook(collection, method, hookData)

@@ -12,6 +12,8 @@ function plugin.keyPressed()
 	end
 end
 
+-- Functions
+
 function plugin.read(location)
 	local file = io.open(location, 'r')
 	if not file then return end
@@ -29,8 +31,6 @@ function plugin.write(t, location)
 	io.write('return data')
 	io.close(file)
 end
-
--- Functions
 
 function printTable(table, p)
 	local t = table or {}

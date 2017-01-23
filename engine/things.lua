@@ -3,13 +3,6 @@ local rawData = {}
 local thingsTable = {}
 local lastId = nil
 
-local expand = {
-	player = require 'scripts.player',
-	grass = require 'scripts.grass',
-	tree = require 'scripts.trees',
-	flower = require 'scripts.flowers'
-}
-
 -- Hooks
 
 function things.assetsLoaded()
@@ -17,20 +10,19 @@ function things.assetsLoaded()
 end
 
 function things.loadGame()
+	thingsTable = {}
 	rawData = data.plugins.persistence.read('saves/things.lua')
 
-	for id, thing in pairs(rawData) do
-		if string.match(id, 'needsid') then
-			id = things.newId()
-		end
-		expand[thing.type].expand[thing.subtype](thing, id, thingsTable)
+	for _, thing in ipairs(rawData) do
+		things.addThing(thing)
 	end
 end
 
 function things.saveGame()
-	for id, thing in pairs(thingsTable) do
-		if thing.type and thing.subtype then
-			expand[thing.type].condense[thing.subtype](thing, id, rawData)
+	rawData = {}
+	for _, thing in ipairs(thingsTable) do
+		if thing.type then
+			data.plugins[thing.type].save(thing, rawData)
 		end
 	end
 	data.plugins.persistence.write(rawData, 'saves/things.lua')
@@ -45,7 +37,7 @@ function things.update(dt)
 
 	local viewport = getViewport()
 
-	for id, thing in pairs(thingsTable) do
+	for _, thing in ipairs(thingsTable) do
 
 		local inViewport =
 		thing.x + thing.width > viewport.x and
@@ -56,11 +48,6 @@ function things.update(dt)
 		if inViewport then
 			table.insert(renderer.toDraw[thing.layer], thing)
 		end
-
-		-- Some functions expect the id of the thing to be part of the thing table, rather than
-		-- its index
-
-		thing.id = id
 
 		if thing.canMove and inViewport then
 
@@ -131,24 +118,8 @@ function things.update(dt)
 		-- Handle events if this thing has events associated with it
 
 		if events then
-			for _, e in pairs(thing.events or {}) do
-				local run = true
-
-				-- Conditions can prevent the event from firing
-
-				if conditions and e.conditions then
-					for condition, _ in pairs(e.conditions) do
-						local result = conditions[condition](t, e)
-						e.conditions[condition] = result
-						run = run and result
-					end
-				end
-
-				-- Run the event if conditions all passed
-
-				if run and events[e.event] then
-					events[e.event].fire(t, e)
-				end
+			for _, event in ipairs(thing.events or {}) do
+				events[event].fire(thing, event)
 			end
 		end
 	end
@@ -177,31 +148,10 @@ function things.removeThing(id)
 end
 
 function things.addThing(thing)
-	local id = things.newId()
-	thingsTable[id] = thing
-	return id
-end
-
-function things.newId()
-	local prefix = 'thing'
-	local i = 1
-	local id
-
-	if lastId == nil then
-		while true do
-			if not thingsTable[prefix..i] and not rawData[prefix..i] then
-				lastId = i
-				id = prefix..i
-				break
-			end
-			i = i + 1
-		end
-	else
-		lastId = lastId + 1
-		id = prefix..lastId
+	if thing.type then
+		data.plugins[thing.type].load(thing, thingsTable)
+		thing.id = #thingsTable
 	end
-
-	return id
 end
 
 return things
