@@ -28,45 +28,34 @@ function keyboard.update()
 	local things = data.plugins.things
 	local player = data.plugins.player
 
-	local keyDown
-	for key, _ in pairs(keyboard.keys) do
-		if love.keyboard.isDown(keyboard.keys[key]) then
-			keyDown = key
-			break
-		end
-	end
+	-- Movement
 
 	local isMovementKey =
-		keyDown == 'up'
-		or keyDown == 'down'
-		or keyDown == 'left'
-		or keyDown == 'right'
+	keyboard.keyPressed == 'up'
+	or keyboard.keyPressed == 'down'
+	or keyboard.keyPressed == 'left'
+	or keyboard.keyPressed == 'right'
 
 	if data.state == 'game' and things and isMovementKey then
-		things.setProperty(player.id, 'moveState', 'move_'..keyDown)
-		things.setProperty(player.id, 'animationState', 'move_'..keyDown)
+		things.setProperty(player.getId(), 'moveState', 'move_'..keyboard.keyPressed)
+		things.setProperty(player.getId(), 'animationState', 'move_'..keyboard.keyPressed)
 	end
+
 end
 
 function love.keypressed(key)
-	local action = nil
-
 	for k, _ in pairs(keyboard.keys) do
 		if keyboard.keys[k] == key then
-			action = k
+			keyboard.keyPressed = k
+			callHook('plugins', 'keypressed', k)
 		end
-	end
-
-	if action then
-		keyboard.currentKeyPressed = action
-		callHook('plugins', 'keyPressed')
 	end
 end
 
--- Functions
-
-function keyboard.add(action, key)
-	keyboard.keys[action] = key
+function love.keyreleased(key)
+	if keyboard.keys[keyboard.keyPressed] == key then
+		keyboard.keyPressed = nil
+	end
 end
 
 return keyboard

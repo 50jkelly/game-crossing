@@ -20,6 +20,12 @@ end
 
 function clock.update(dt)
 
+	-- State check
+
+	if data.state ~= 'game' then
+		return
+	end
+
 	-- Get the maximum length of one in game second in real life seconds
 
 	local inGameSecond = 1 / 20000

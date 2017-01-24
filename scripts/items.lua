@@ -1,21 +1,35 @@
 local items = {}
 
-function items.assetsLoaded()
-	local sprites = data.plugins.sprites
+items.jug = {
+	name = 'Jug',
+	sprite = 'jug',
+	charges = 3,
+	maxCharges = 3
+}
 
-	items.book = {
-		name = 'Book',
-		sprite = 'itemBook'
-	}
+items.seed = {
+	name = 'Seed',
+	sprite = 'itemSeed',
+	placed = 'juvenileFlower'
+}
 
-	items.seed = {
-		name = 'Seed',
-		sprite = sprites.getSprite('itemSeed'),
-		worldSprite = sprites.getSprite('flower1start'),
-		placeable = true,
-		placedType = 'flower',
-		placedSubtype = 'flower1start'
-	}
-end
+items.juvenileFlower = {
+	name = 'Juvenile Flower',
+	sprite = 'flower1start',
+	layer = 5,
+	grow = 'flower',
+	growTime = 4 * 60,
+	growOffsetY = -15,
+	interaction = true,
+	water = 0
+}
+
+items.flower = {
+	name = 'Flower',
+	sprite = 'flower1',
+	layer = 5,
+	interaction = true,
+	pickupItems = { 'seed', 'seed' }
+}
 
 return items

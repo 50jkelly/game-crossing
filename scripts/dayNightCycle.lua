@@ -30,7 +30,6 @@ function dayNightCycle.update()
 		dayNightCycle.ambientColor = 
 			calculate_transition(minutes, sunrise, sunrise_duration, night_color, day_color) or
 			calculate_transition(minutes, sunset, sunset_duration, day_color, night_color) or
-			dayNightCycle.ambientColor or
 			calculate_default_color(minutes, sunrise, sunset, day_color, night_color)
 	end
 end
@@ -41,7 +40,7 @@ function calculate_transition(minutes, transition, duration, start_color, target
 	for i, _ in ipairs(target_color) do
 		local transition_progress = minutes - transition
 
-		if transition_progress <= 0 then
+		if transition_progress < 0 then
 			return nil
 		end
 

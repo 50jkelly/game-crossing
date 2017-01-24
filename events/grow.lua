@@ -1,20 +1,21 @@
 local grow = {}
 
 function grow.fire(thing, eventData)
+
+	if not (thing.placed and thing.timeToGrow) then
+		return
+	end
+
 	local clock = data.plugins.clock
 	local things = data.plugins.things
+	local minutes = clock.getMinutes()
 
-	local time = clock.getTime(true)
-	local hours = time.days * 24 + time.hours
-	local minutes = hours * 60 + time.minutes
-
-	if minutes - thing.planted > thing.timeToGrow then
+	if minutes - thing.placed > thing.timeToGrow then
 		things.removeThing(thing.id)
 		things.addThing({
 			x = thing.growsInto.x or thing.x,
 			y = thing.growsInto.y or thing.y,
-			type = thing.growsInto.type,
-			subtype = thing.growsInto.subtype
+			type = thing.growsInto.type
 		})
 	end
 end

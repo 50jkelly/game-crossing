@@ -2,12 +2,12 @@ local plugin = {}
 
 -- Hooks
 
-function plugin.keyPressed()
-	local key = data.plugins.keyboard.currentKeyPressed
-	if key == 'saveGame' then
+function plugin.keypressed()
+	local keyboard = data.plugins.keyboard
+	if keyboard.keyPressed == 'saveGame' then
 		callHook('plugins', 'saveGame')
 	end
-	if key == 'loadGame' then
+	if keyboard.keyPressed == 'loadGame' then
 		callHook('plugins', 'loadGame')
 	end
 end

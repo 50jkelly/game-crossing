@@ -13,11 +13,17 @@ function sprites.loadGraphics()
 	loadSprite('tree1Bottom', 'images/trees/tree1Bottom.png')
 	loadSprite('tree1Top', 'images/trees/tree1Top.png')
 
+	-- Items
+
+	loadSprite('jug', 'images/items/jug.png')
+
 	-- Lightmaps
 
 	loadSprite('playerLight', 'images/lightmaps/playerLight.png')
 	loadSprite('flower1Light', 'images/lightmaps/flower1Light.png')
 	loadSprite('tree1TopLightBlock', 'images/lightmaps/tree1TopLightBlock.png')
+
+	-- Player animations
 
 	loadSprite('player_walk_down_1', 'images/player_walk_down_1.png')
 	loadSprite('player_walk_down_2', 'images/player_walk_down_2.png')

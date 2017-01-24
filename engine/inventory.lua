@@ -26,41 +26,29 @@ function inventory.saveGame()
 	data.plugins.persistence.write(inventoryData, 'saves/inventory.lua')
 end
 
-function inventory.keyPressed()
-	local key = data.plugins.keyboard.currentKeyPressed
+function inventory.keypressed()
+	local keyboard = data.plugins.keyboard
 
-	-- Change the highlighted slot in response to keyboard input
-
-	if data.state == 'inventory' then
-		if key == 'up' and inventory.highlightedSlot then
-			if inventory.highlightedSlot > 1 then
-				inventory.highlightedSlot = inventory.highlightedSlot - 1
-			end
-		end
-
-		if key == 'down' and inventory.highlightedSlot then 
-			if inventory.highlightedSlot < inventory.numberOfSlots then
-				inventory.highlightedSlot = inventory.highlightedSlot + 1
-			end
-		end
+	if data.state == 'inventory' and keyboard.keyPressed == 'up' then
+		inventory.highlightedSlot = math.max(1, inventory.highlightedSlot - 1)
+	elseif data.state == 'inventory' and keyboard.keyPressed == 'down' then
+		inventory.highlightedSlot = math.min(inventory.numberOfSlots, inventory.highlightedSlot + 1)
 	end
 
-	if data.state == 'game' and string.match(key, 'actionBar') then
+	if data.state == 'game' and string.match(keyboard.keyPressed, 'actionBar') then
 		for i, slot in pairs(inventoryData) do
-			if slot.shortcut == key then
+			if slot.shortcut == keyboard.keyPressed then
 				inventory.highlightedSlot = tonumber(i)
 			end
 		end
 	end
 
-	-- Change the game state in response to keyboard input
-
-	if key == 'openInventory' then
-		if data.state == 'game' then
-			data.state = 'inventory'
-		elseif data.state == 'inventory' then
-			data.state = 'game'
-		end
+	if keyboard.keyPressed == 'openInventory' then
+		local states = {
+			game = 'inventory',
+			inventory = 'game'
+		}
+		data.state = states[data.state]
 	end
 end
 

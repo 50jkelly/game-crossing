@@ -1,40 +1,35 @@
 local trees = {}
 
-function trees.load(treeBottom, thingsTable)
-	local sprites = data.plugins.sprites
+function trees.add(x, y)
+	local things = data.plugins.things
 
-	-- Load in the tree bottom
+	table.insert(things.thingsTable, {
+		x = x,
+		y = y,
+		sprite = 'tree1Bottom',
+		collides = true,
+		layer = 5,
+		speed = 0,
+		blockedStates = {},
+		framesPerSecond = 1,
+		frames = {
+			idle = { 'tree1Bottom' }
+		}
+	})
 
-	treeBottom.sprite = sprites.getSprite('tree1Bottom')
-	treeBottom.width = treeBottom.sprite.width
-	treeBottom.height = treeBottom.sprite.height
-	treeBottom.collides = true
-	treeBottom.layer = 5
-
-	table.insert(thingsTable, treeBottom)
-
-	-- Generate a tree top
-
-	local treeTopSprite = sprites.getSprite('tree1Top') 
-	local treeTop = {
-		sprite = treeTopSprite,
-		width = treeTopSprite.width,
-		height = treeTopSprite.height,
-		lightBlockSprite = sprites.getSprite('tree1TopLightBlock'),
+	table.insert(things.thingsTable, {
+		x = x - 60,
+		y = y - 180,
+		sprite = 'tree1Top',
+		lightBlockSprite = 'tree1TopLightBlock',
 		collides = false,
-		x = treeBottom.x - 60,
-		y = treeBottom.y - 180,
-		layer = 6
-	}
-
-	table.insert(thingsTable, treeTop)
-end
-
-function trees.save(thing, rawData)
-	table.insert(rawData, {
-		type = thing.type,
-		x = thing.x,
-		y = thing.y
+		layer = 6,
+		speed = 0,
+		blockedStates = {},
+		framesPerSecond = 1,
+		frames = {
+			idle = { 'tree1Top' }
+		}
 	})
 end
 

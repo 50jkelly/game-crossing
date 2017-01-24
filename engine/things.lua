@@ -1,31 +1,21 @@
 local things = {}
-local rawData = {}
-local thingsTable = {}
-local lastId = nil
+local minutes
+local lastMinutes
 
 -- Hooks
 
 function things.assetsLoaded()
 	things.loadGame()
+	things.toRemove = {}
 end
 
 function things.loadGame()
-	thingsTable = {}
-	rawData = data.plugins.persistence.read('saves/things.lua')
-
-	for _, thing in ipairs(rawData) do
-		things.addThing(thing)
-	end
+	things.thingsTable = data.plugins.persistence.read('saves/things.lua')
+	lastMinutes = nil
 end
 
 function things.saveGame()
-	rawData = {}
-	for _, thing in ipairs(thingsTable) do
-		if thing.type then
-			data.plugins[thing.type].save(thing, rawData)
-		end
-	end
-	data.plugins.persistence.write(rawData, 'saves/things.lua')
+	data.plugins.persistence.write(things.thingsTable, 'saves/things.lua')
 end
 
 function things.update(dt)
@@ -34,124 +24,159 @@ function things.update(dt)
 	local renderer = data.plugins.renderer
 	local sprites = data.plugins.sprites
 	local animation = data.plugins.animation
-
+	local collision = data.plugins.collision
+	local inventory = data.plugins.inventory
+	local items = data.plugins.items
+	local clock = data.plugins.clock
+	local player = data.plugins.player
 	local viewport = getViewport()
 
-	for _, thing in ipairs(thingsTable) do
+	-- Clock
 
-		local inViewport =
-		thing.x + thing.width > viewport.x and
-		thing.x < viewport.x + viewport.width and
-		thing.y + thing.height > viewport.y and
-		thing.y < viewport.y + viewport.height
+	minutes = clock.getMinutes()
+	local minutesDelta = minutes - (lastMinutes or minutes)
 
-		if inViewport then
+	-- Player interaction
+
+	player.canInteract = {}
+
+	-- Things
+
+	for i, thing in ipairs(things.thingsTable) do
+
+		thing.width = thing.width or sprites.getSprite(thing.sprite).width
+		thing.height = thing.height or sprites.getSprite(thing.sprite).height
+
+		if overlapping(thing, viewport) then
 			table.insert(renderer.toDraw[thing.layer], thing)
-		end
+			thing.id = i
 
-		if thing.canMove and inViewport then
+			-- State check
 
-			-- Save the thing's current position in case we need to move it back
+			if data.state ~= 'game' then
+				return
+			end
+
+			-- Movement
+
+			local speed = (thing.speed or 0) * dt
+			local positionChange = { x = {}, y = {}}
+			positionChange['y']['move_up'] = thing.y - speed
+			positionChange['y']['move_down'] = thing.y + speed
+			positionChange['x']['move_left'] = thing.x - speed
+			positionChange['x']['move_right'] = thing.x + speed
 
 			thing.oldX = thing.x
 			thing.oldY = thing.y
-
-			-- If the current movement state is a blocked state then set the current movement
-			-- state to idle. Otherwise, clear all blocked states.
-
-			if thing.blockedStates[thing.moveState] then
-				thing.moveState = 'idle'
-			else
-				thing.blockedStates = {}
-			end
-
-			-- If the thing can move, then update its position according to its movement state
-
-			local speed = thing.speed * dt
-			if thing.moveState == 'move_up' then
-				thing.y = thing.y - speed
-			end
-			if thing.moveState == 'move_down' then
-				thing.y = thing.y + speed
-			end
-			if thing.moveState == 'move_left' then
-				thing.x = thing.x - speed
-			end
-			if thing.moveState == 'move_right' then
-				thing.x = thing.x + speed
-			end
-
-			-- Reset the move state so that it must be continually reset on
-			-- update for the thing to continue moving
-
+			thing.blockedStates = thing.blockedStates or {}
+			thing.moveState = thing.blockedStates[thing.moveState] or thing.moveState
+			thing.x = positionChange['x'][thing.moveState] or thing.x
+			thing.y = positionChange['y'][thing.moveState] or thing.y
 			thing.moveState = 'idle'
+			thing.blockedStates = {}
 
-			-- If the thing is colliding with something else, then set its
-			-- position back to its old position, and add the current movement
-			-- state to the blocked states so the thing cannot continue to
-			-- move in that direction
+			-- Collision detection
 
-			local collision = data.plugins.collision
-			if collision then
-				local collidingWith = collision.colliding(thing, thingsTable)
-				if collidingWith and collidingWith.collides then
-					thing.x = thing.oldX
-					thing.y = thing.oldY
-					if thing.moveState ~= idle then
-						thing.blockedStates[thing.moveState] = true
-					end
+			local collisionPosition = {}
+			local newMoveState = {}
+			collisionPosition['true'] = { x = thing.oldX, y = thing.oldY }
+			collisionPosition['false'] = { x = thing.x, y = thing.y }
+			newMoveState['true'] = 'idle'
+			newMoveState['false'] = thing.moveState
+
+			local collidingWith = tostring((collision.colliding(thing, things.thingsTable)) ~= nil)
+			thing.x = collisionPosition[collidingWith].x
+			thing.y = collisionPosition[collidingWith].y
+			thing.blockedStates[thing.moveState] = newMoveState[collidingWith]
+
+			-- Animation
+
+			animation.cycle(thing, dt)
+			thing.animationState = 'idle'
+
+			-- Water consumption
+
+			if thing.water then
+				thing.water = math.max(0, thing.water - minutesDelta)
+			end
+
+			-- Growth
+
+			if thing.grow and thing.growTime then
+
+				if thing.water and thing.water == 0 then
+					thing.growTime = thing.growTime - (minutesDelta / 10)
+				else
+					thing.growTime = thing.growTime - minutesDelta
+				end
+
+				if thing.growTime < 0 then
+					local newThing = copyThing(
+						items[thing.grow],
+						thing.x + (thing.growOffsetX or 0),
+						thing.y + (thing.growOffsetY or 0))
+					table.insert(things.toRemove, thing)
+					table.insert(things.thingsTable, newThing)
 				end
 			end
-		end
 
-		if thing.isAnimated and inViewport then
+			-- Player interaction
 
-			-- Update the thing's sprite according to its animation state
-
-			if animation then
-				animation.cycle(thing, dt)
+			thing.inRange = false
+			local interactRange = things.getProperty(player.getId(), 'interactRange')
+			if thing.interaction and player.inRange(thing, interactRange) then
+				table.insert(player.canInteract, thing)
+				thing.inRange = true
 			end
 
-			thing.animationState = 'idle'
-		end
-
-		-- Handle events if this thing has events associated with it
-
-		if events then
-			for _, event in ipairs(thing.events or {}) do
-				events[event].fire(thing, event)
-			end
 		end
 	end
+
+	-- Cursor sprite
+
+	local slot = inventory.getSlots()[inventory.highlightedSlot]
+	local item = items[slot.item]
+	renderer.cursorSprite = nil
+	if item and item.placed then
+		renderer.cursorSprite = items[item.placed].sprite
+	end
+
+	-- Thing removal
+
+	for i, thing in ipairs(things.toRemove) do
+		table.remove(things.thingsTable, thing.id)
+	end
+
+	for i, thing in ipairs(things.toRemove) do
+		table.remove(things.toRemove, i)
+	end
+
+	-- Clock
+
+	lastMinutes = minutes
+
 end
 
 -- Functions
 
 function things.setProperty(id, property, value)
-	if thingsTable and thingsTable and thingsTable[id] then
-		thingsTable[id][property] = value
+	if things.thingsTable[id] then
+		things.thingsTable[id][property] = value
 	end
 end
 
 function things.getProperty(id, property)
-	if thingsTable and thingsTable and thingsTable[id] then
-		return thingsTable[id][property]
+	if things.thingsTable[id] then
+		return things.thingsTable[id][property]
 	end
 end
 
 function things.getThing(id)
-	return thingsTable[id]
+	return things.thingsTable[id]
 end
 
 function things.removeThing(id)
-	thingsTable[id] = nil
-end
-
-function things.addThing(thing)
-	if thing.type then
-		data.plugins[thing.type].load(thing, thingsTable)
-		thing.id = #thingsTable
-	end
+	things.thingsTable[id] = nil
 end
 
 return things

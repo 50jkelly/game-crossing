@@ -22,15 +22,15 @@ data.plugins = {
 
 	constants = require 'scripts.constants',
 	events = require 'scripts.events',
-	conditions = require 'scripts.conditions',
 	items = require 'scripts.items',
 	dayNightCycle = require 'scripts.dayNightCycle',
+	dialogs = require 'scripts.dialogs',
 
 	player = require 'scripts.player',
 	grass = require 'scripts.grass',
 	trees = require 'scripts.trees',
 	flowers = require 'scripts.flowers',
-	juvenile_flowers = require 'scripts.juvenile_flowers'
+	juvenileFlower = require 'scripts.juvenileFlower'
 }
 
 function love.load()
@@ -119,4 +119,22 @@ function getViewport()
 		x = x,
 		y = y
 	}
+end
+
+function copyThing(toCopy, x, y)
+	new = {}
+
+	for index, value in pairs(toCopy) do
+		new[index] = value
+	end
+
+	if x then
+		new.x = x 
+	end
+
+	if y then
+		new.y = y 
+	end
+
+	return new
 end
