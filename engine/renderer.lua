@@ -126,7 +126,7 @@ function renderer.drawUI()
 			-- Draw the sprite and quantity of the item in the action bar
 
 			if items and sprites and slot.amount > 0 then
-				local item = items.getInstance(slot.item)
+				local item = items.new[slot.item]()
 				local rightMargin = 12 + (string.len(tostring(slot.amount)) - 1) * 8
 				love.graphics.draw(sprites.getSprite(item.sprite).sprite, x, y)
 				love.graphics.print(slot.amount, x + width - rightMargin, y + 4)

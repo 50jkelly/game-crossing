@@ -1,49 +1,47 @@
 local items = {}
+items.new = {}
 
--- Data
+function items.new.jug()
+	return {
+		name = 'Jug',
+		sprite = 'jug',
+		charges = 3,
+		maxCharges = 3
+	}
+end
 
-local itemsList = {}
+function items.new.seed()
+	return {
+		name = 'Seed',
+		sprite = 'itemSeed',
+		placed = 'juvenileFlower'
+	}
+end
 
-itemsList.jug = {
-	name = 'Jug',
-	sprite = 'jug',
-	charges = 3,
-	maxCharges = 3
-}
+function items.new.juvenileFlower()
+	return {
+		name = 'Juvenile Flower',
+		sprite = 'flower1start',
+		layer = 5,
+		grow = 'flower',
+		growTime = 4 * 60,
+		growOffsetY = -15,
+		interaction = true,
+		water = 0
+	}
+end
 
-itemsList.seed = {
-	name = 'Seed',
-	sprite = 'itemSeed',
-	placed = 'juvenileFlower'
-}
-
-itemsList.juvenileFlower = {
-	name = 'Juvenile Flower',
-	sprite = 'flower1start',
-	layer = 5,
-	grow = 'flower',
-	growTime = 4 * 60,
-	growOffsetY = -15,
-	interaction = true,
-	water = 0
-}
-
-itemsList.flower = {
-	name = 'Flower',
-	sprite = 'flower1',
-	layer = 5,
-	interaction = true,
-	pickupItems = { 'seed', 'seed' }
-}
+function items.new.flower()
+	return {
+		name = 'Flower',
+		sprite = 'flower1',
+		layer = 5,
+		interaction = true,
+		pickupItems = { 'seed', 'seed' }
+	}
+end
 
 -- Functions
-
-function items.getInstance(name)
-	if not itemsList[name] then
-		return nil
-	end
-	return copyThing(itemsList[name])
-end
 
 function items.getRect(itemInstance, playerRect, moveState, previousPosition)
 	local sprite = data.plugins.sprites.getSprite(itemInstance.sprite)

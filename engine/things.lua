@@ -110,7 +110,7 @@ function things.update(dt)
 				end
 
 				if thing.growTime < 0 then
-					local newThing = items.getInstance(thing.grow)
+					local newThing = items.new[thing.grow]()
 					newThing.x = thing.x + (thing.growOffsetX or 0)
 					newThing.y = thing.y + (thing.growOffsetY or 0)
 					things.addToGroup(thing, 'toRemove')
@@ -130,8 +130,14 @@ function things.update(dt)
 
 			if things.inGroup(thing, 'player') then
 				local slot = inventory.getSlots()[inventory.highlightedSlot]
-				local item = items.getInstance(slot.item) or { placed = nil }
-				local placeable = items.getInstance(item.placed)
+				local item
+				local placeable
+				if slot.item and items.new[slot.item] then
+					item = items.new[slot.item]()
+				end
+				if item and item.placed then
+					placeable = items.new[item.placed]()
+				end
 
 				if placeable then
 					local previousPosition = nil
@@ -151,6 +157,8 @@ function things.update(dt)
 						previousPosition)
 
 					items.placeable = placeable
+				else
+					items.placeable = nil
 				end
 			end
 

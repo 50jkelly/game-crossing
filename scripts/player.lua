@@ -17,7 +17,7 @@ function player.keypressed(key)
 	if data.state == 'game' and key == 'use' then
 
 		local heldItemSlot = inventory.getSlots()[inventory.highlightedSlot]
-		local heldItem = items.getInstance(heldItemSlot.item)
+		local heldItem = items.new[heldItemSlot.item]()
 		local playerRect = player.getRect()
 		local canInteract = things.getGroup('canInteract')
 
