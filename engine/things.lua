@@ -1,4 +1,5 @@
 local things = {}
+local groups = {}
 local minutes
 local lastMinutes
 
@@ -6,7 +7,6 @@ local lastMinutes
 
 function things.assetsLoaded()
 	things.loadGame()
-	things.toRemove = {}
 end
 
 function things.loadGame()
@@ -38,7 +38,7 @@ function things.update(dt)
 
 	-- Player interaction
 
-	player.canInteract = {}
+	things.clearGroup('canInteract')
 
 	-- Things
 
@@ -69,10 +69,9 @@ function things.update(dt)
 			thing.oldX = thing.x
 			thing.oldY = thing.y
 			thing.blockedStates = thing.blockedStates or {}
-			thing.moveState = thing.blockedStates[thing.moveState] or thing.moveState
+			thing.moveState = thing.blockedStates[thing.moveState] or thing.moveState or 'idle'
 			thing.x = positionChange['x'][thing.moveState] or thing.x
 			thing.y = positionChange['y'][thing.moveState] or thing.y
-			thing.moveState = 'idle'
 			thing.blockedStates = {}
 
 			-- Collision detection
@@ -111,11 +110,10 @@ function things.update(dt)
 				end
 
 				if thing.growTime < 0 then
-					local newThing = copyThing(
-						items[thing.grow],
-						thing.x + (thing.growOffsetX or 0),
-						thing.y + (thing.growOffsetY or 0))
-					table.insert(things.toRemove, thing)
+					local newThing = items.getInstance(thing.grow)
+					newThing.x = thing.x + (thing.growOffsetX or 0)
+					newThing.y = thing.y + (thing.growOffsetY or 0)
+					things.addToGroup(thing, 'toRemove')
 					table.insert(things.thingsTable, newThing)
 				end
 			end
@@ -125,31 +123,50 @@ function things.update(dt)
 			thing.inRange = false
 			local interactRange = things.getProperty(player.getId(), 'interactRange')
 			if thing.interaction and player.inRange(thing, interactRange) then
-				table.insert(player.canInteract, thing)
-				thing.inRange = true
+				things.addToGroup(thing, 'canInteract')
 			end
+
+			-- Placeable item
+
+			if things.inGroup(thing, 'player') then
+				local slot = inventory.getSlots()[inventory.highlightedSlot]
+				local item = items.getInstance(slot.item) or { placed = nil }
+				local placeable = items.getInstance(item.placed)
+
+				if placeable then
+					local previousPosition = nil
+					if items.placeable then
+						previousPosition = {
+							x = items.placeable.x,
+							y = items.placeable.y
+						}
+					end
+
+					items.placeable = nil
+
+					placeable.x, placeable.y = items.getRect(
+						placeable,
+						player.getRect(),
+						things.getGroup('player')[1].moveState,
+						previousPosition)
+
+					items.placeable = placeable
+				end
+			end
+
+			-- Movement state
+
+			thing.moveState = 'idle'
 
 		end
 	end
 
-	-- Cursor sprite
-
-	local slot = inventory.getSlots()[inventory.highlightedSlot]
-	local item = items[slot.item]
-	renderer.cursorSprite = nil
-	if item and item.placed then
-		renderer.cursorSprite = items[item.placed].sprite
-	end
-
 	-- Thing removal
 
-	for i, thing in ipairs(things.toRemove) do
+	for i, thing in ipairs(things.getGroup('toRemove')) do
 		table.remove(things.thingsTable, thing.id)
 	end
-
-	for i, thing in ipairs(things.toRemove) do
-		table.remove(things.toRemove, i)
-	end
+	things.clearGroup('toRemove')
 
 	-- Clock
 
@@ -177,6 +194,44 @@ end
 
 function things.removeThing(id)
 	things.thingsTable[id] = nil
+end
+
+function things.addToGroup(thing, group)
+	thing.groups = thing.groups or {}
+	table.insert(thing.groups, group)
+end
+
+function things.removeFromGroup(thing, group)
+	for i, g in ipairs(thing.groups or {}) do
+		if g == group then
+			table.remove(thing.groups, i)
+		end
+	end
+end
+
+function things.clearGroup(group)
+	for _, thing in ipairs(things.thingsTable) do
+		things.removeFromGroup(thing, group)
+	end
+end
+
+function things.getGroup(group)
+	local g = {}
+	for _, thing in ipairs(things.thingsTable) do
+		if things.inGroup(thing, group) then
+			table.insert(g, thing)
+		end
+	end
+	return g
+end
+
+function things.inGroup(thing, group)
+	for _, g in ipairs(thing.groups or {}) do
+		if group == g then
+			return true
+		end
+	end
+	return false
 end
 
 return things

@@ -6,6 +6,7 @@ function renderer.draw()
 	local things = data.plugins.things
 	local sprites = data.plugins.sprites
 	local constants = data.plugins.constants
+	local items = data.plugins.items
 	local viewport = getViewport()
 
 	-- Start drawing
@@ -17,7 +18,7 @@ function renderer.draw()
 		-- Sort the layer by y position
 
 		table.sort(renderer.toDraw[layer], function(a, b)
-			return a.y < b.y
+			return a.height + a.y < b.height + b.y
 		end)
 
 		for _, thing in ipairs(renderer.toDraw[layer]) do
@@ -25,9 +26,19 @@ function renderer.draw()
 			-- Render sprites to the diffuse canvas
 
 			renderer.useCanvas(renderer.diffuseCanvas, 'alpha', function()
-				if thing.inRange then
+
+				-- Render the placeable item
+
+				if things.inGroup(thing, 'player') and items.placeable then
+					love.graphics.setColor(constants.translucentWhite)
+					love.graphics.draw(sprites.getSprite(items.placeable.sprite).sprite, items.placeable.x, items.placeable.y)
+					love.graphics.setColor(constants.white)
+				end
+
+				if things.inGroup(thing, 'canInteract') then
 					love.graphics.setColor(constants.green)
 				end
+
 				love.graphics.draw(sprites.getSprite(thing.sprite).sprite, thing.x, thing.y)
 				love.graphics.setColor(constants.white)
 			end)
@@ -92,15 +103,6 @@ function renderer.drawUI()
 
 	if inventory and items and constants then
 
-		-- If the currently selected inventory item is placeable, draw it's sprite at
-		-- the current mouse position
-
-		if renderer.cursorSprite then
-			local x, y = player.getItemPosition(true)
-			love.graphics.setColor(constants.translucentWhite)
-			love.graphics.draw(sprites.getSprite(renderer.cursorSprite).sprite, x, y)
-		end
-
 		-- Draw the action bar, which is just another view on the inventory
 
 		local margin = 10
@@ -123,9 +125,10 @@ function renderer.drawUI()
 
 			-- Draw the sprite and quantity of the item in the action bar
 
-			if items and items[slot.item] and sprites and slot.amount > 0 then
+			if items and sprites and slot.amount > 0 then
+				local item = items.getInstance(slot.item)
 				local rightMargin = 12 + (string.len(tostring(slot.amount)) - 1) * 8
-				love.graphics.draw(sprites.getSprite(items[slot.item].sprite).sprite, x, y)
+				love.graphics.draw(sprites.getSprite(item.sprite).sprite, x, y)
 				love.graphics.print(slot.amount, x + width - rightMargin, y + 4)
 			end
 
@@ -179,8 +182,9 @@ function renderer.drawUI()
 
 					-- Print the item's name
 
-					if items[slot.item].name then
-						love.graphics.print(items[slot.item].name, x + 80, y + textYMargin)
+					local item = items.getInstance(slot.item)
+					if item.name then
+						love.graphics.print(item.name, x + 80, y + textYMargin)
 					end
 
 					-- Print the item's quantity
@@ -190,7 +194,7 @@ function renderer.drawUI()
 					-- Draw the item's sprite if it is highlighted
 
 					if inventory.highlightedSlot == index then
-						love.graphics.draw(sprites.getSprite(items[slot.item].sprite).sprite, panelX + (panelWidth - margin - 50), startY)
+						love.graphics.draw(sprites.getSprite(item.sprite).sprite, panelX + (panelWidth - margin - 50), startY)
 					end
 				end
 			end
