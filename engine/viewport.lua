@@ -1,36 +1,27 @@
-local viewport = {}
+local this = {}
 
--- Hooks
-
-function viewport.initialise()
-	viewport.x = 0
-	viewport.y = 0
-	viewport.width = 800
-	viewport.height = 600
+function this.initialise()
+	this.x = 0
+	this.y = 0
+	this.width = love.graphics.getWidth()
+	this.height = love.graphics.getHeight()
 end
 
-function viewport.update()
+function this.update()
 	local player = data.plugins.player
 	if player then
-		local playerRect = player.getRect()
-
-		viewport.x = playerRect.x +
-		playerRect.width -
-		(viewport.width / 2)
-
-		viewport.y = playerRect.y +
-		playerRect.height -
-		(viewport.height / 2)
+		this.x = player.get_center().x
+		this.y = player.get_center().y
 	end
 end
 
-function viewport.preDraw()
+function this.pre_draw()
 	love.graphics.push()
-	love.graphics.translate(-viewport.x, -viewport.y)
+	love.graphics.translate(-this.x, -this.y)
 end
 
-function viewport.postDraw()
+function this.post_draw()
 	love.graphics.pop()
 end
 
-return viewport
+return this
