@@ -1,96 +1,93 @@
-local renderer = {}
-renderer.toDraw = {{}, {}, {}, {}, {}, {}}
+local this = {}
 
-function renderer.draw()
+local sprites
+local constants
+local items
+local viewport
+local geometry
+local keyboard
+local shaders
 
-	local things = data.plugins.things
-	local sprites = data.plugins.sprites
-	local constants = data.plugins.constants
-	local items = data.plugins.items
-	local viewport = getViewport()
+local light_map
+local light_mask
+local diffuse_canvas
+local dynamic_light_shader
 
-	-- Start drawing
+function this.initialise()
+	sprites = data.plugins.sprites
+	constants = data.plugins.constants
+	items = data.plugins.items
+	viewport = data.plugins.viewport
+	geometry = data.libraries.geometry
+	keyboard = data.plugins.keyboard
+	shaders = data.plugins.shaders
 
-	renderer.clearCanvas(renderer.lightCanvas, constants.black)
-	renderer.clearCanvas(renderer.lightBlockCanvas, constants.white)
+	diffuse_canvas = love.graphics.newCanvas(viewport.width, viewport.height)
+	light_map = love.graphics.newCanvas(viewport.width, viewport.height)
+	light_mask = love.graphics.newCanvas(viewport.width, viewport.height)
 
-	for layer=1, #renderer.toDraw, 1 do
-		-- Sort the layer by y position
+	dynamic_light_shader = shaders.dynamic_light
+end
 
-		table.sort(renderer.toDraw[layer], function(a, b)
+function this.draw()
+
+	clear_canvas(light_map, constants.black)
+	clear_canvas(light_mask, constants.white)
+
+	for layer_index, layer in pairs(this.to_draw) do
+
+		-- Entity sort
+
+		table.sort(layer, function(a, b)
 			return a.height + a.y < b.height + b.y
 		end)
 
-		for _, thing in ipairs(renderer.toDraw[layer]) do
+		for _, entity in ipairs(layer) do
 
-			-- Render sprites to the diffuse canvas
+			-- Render diffuse canvas
 
-			renderer.useCanvas(renderer.diffuseCanvas, 'alpha', function()
-
-				-- Render the placeable item
-
-				if things.inGroup(thing, 'player') and items.placeable then
-					love.graphics.setColor(constants.translucentWhite)
-					love.graphics.draw(sprites.getSprite(items.placeable.sprite).sprite, items.placeable.x, items.placeable.y)
-					love.graphics.setColor(constants.white)
-				end
-
-				if things.inGroup(thing, 'canInteract') then
-					love.graphics.setColor(constants.green)
-				end
-
-				love.graphics.draw(sprites.getSprite(thing.sprite).sprite, thing.x, thing.y)
+			use_canvas(diffuse_canvas, 'alpha', function()
+				love.graphics.draw(entity.sprite, entity.x, entity.y)
 				love.graphics.setColor(constants.white)
 			end)
 
-			-- Render lights to the lights canvas
+			-- Render light map
 
-			renderer.useCanvas(renderer.lightCanvas, 'add', function()
-				if thing.light then
+			use_canvas(light_map, 'add', function()
+				if entity.light_sprite then
 					love.graphics.draw(
-					sprites.getSprite(thing.light).sprite,
-					thing.x + thing.width / 2 - sprites.getSprite(thing.light).width / 2 + (thing.lightOffsetX or 0),
-					thing.y + thing.height / 2 - sprites.getSprite(thing.light).height / 2 + (thing.lightOffsetY or 0))
+						entity.light_sprite
+						geometry.get_center(entity).x - geometry.get_center(entity.light_sprite).x + (entity.light_offset.x or 0),
+						geometry.get_center(entity).y - geometry.get_center(entity.light_sprite).y + (entity.light_offset.y or 0))
 				end
 			end)
 
-			-- Render light blockers to the lightblock canvas
+			-- Render light mask
 
-			renderer.useCanvas(renderer.lightBlockCanvas, 'alpha', function()
-				if thing.lightBlockSprite then
-					love.graphics.draw(sprites.getSprite(thing.lightBlockSprite).sprite, thing.x, thing.y)
+			use_canvas(light_mask, 'alpha', function()
+				if entity.light_mask_sprite then
+					love.graphics.draw(entity.light_mask_sprite, entity.x, entity.y)
 				end
 			end)
 		end
 
-		-- Render to the screen using the dynamic lighting shader
+		-- Render shader
 
-		renderer.dynamicLightShader.shader:send('lightMap', renderer.lightCanvas)
-		renderer.dynamicLightShader.shader:send('lightBlockMap', renderer.lightBlockCanvas)
+		dynamic_light_shader.shader:send(dynamic_light_shader.shader)
+		dynamic_light_shader.shader:send('light_mask', light_mask)
 
-		renderer.useCanvas(nil, 'alpha', function()
-			love.graphics.setShader(renderer.dynamicLightShader.shader)
-			love.graphics.draw(renderer.diffuseCanvas, viewport.x, viewport.y)
+		use_canvas(nil, 'alpha', function()
+			love.graphics.setShader(dynamic_light_shader.shader)
+			love.graphics.draw(diffuse_canvas, viewport.x, viewport.y)
 		end, 'premultiplied')
 
-		-- Render dialog boxes
+		-- Reset layer
 
-		if data.dialog then
-			love.graphics.setColor(constants.blue)
-			love.graphics.rectangle("fill", data.dialog.x, data.dialog.y, data.dialog.width, data.dialog.height, 5, 5)
-			love.graphics.setColor(constants.white)
-			love.graphics.rectangle("line", data.dialog.x, data.dialog.y, data.dialog.width, data.dialog.height, 5, 5)
-			love.graphics.print(data.dialog.text, data.dialog.x + 10, data.dialog.y + 10)
-		end
-
+		layer = {}
 	end
-
-	-- Clear our toDraw list for the next pass
-
-	renderer.toDraw = {{}, {}, {}, {}, {}, {}}
 end
 
-function renderer.drawUI()
+function this.drawUI()
 
 	local inventory = data.plugins.inventory
 	local keyboard = data.plugins.keyboard
@@ -98,7 +95,6 @@ function renderer.drawUI()
 	local constants = data.plugins.constants
 	local items = data.plugins.items
 	local player = data.plugins.player
-	local things = data.plugins.things
 	local viewport = getViewport()
 
 	if inventory and items and constants then
@@ -121,7 +117,7 @@ function renderer.drawUI()
 
 			-- Draw the panels
 
-			renderer.drawPanel(x, y, width, height, panelColors[i == inventory.highlightedSlot], constants.black)
+			this.drawPanel(x, y, width, height, panelColors[i == inventory.highlightedSlot], constants.black)
 
 			-- Draw the sprite and quantity of the item in the action bar
 
@@ -154,7 +150,7 @@ function renderer.drawUI()
 			local x = panelX + margin
 			local startY = panelY + margin
 
-			renderer.drawPanel(panelX, panelY, panelWidth, panelHeight, constants.blue, constants.white)
+			this.drawPanel(panelX, panelY, panelWidth, panelHeight, constants.blue, constants.white)
 
 			-- Print the items in the player's inventory
 
@@ -204,15 +200,15 @@ end
 
 -- Private functions
 
-function renderer.drawPanel(x, y, width, height, backgroundColor, borderColor)
-	love.graphics.setColor(backgroundColor)
+local draw_panel = function(x, y, width, height, background_color, border_color)
+	love.graphics.setColor(background_color)
 	love.graphics.rectangle("fill", x, y, width, height, 5, 5)
-	love.graphics.setColor(borderColor)
+	love.graphics.setColor(border_color)
 	love.graphics.rectangle("line", x, y, width, height, 5, 5)
 	love.graphics.setColor(255, 255, 255, 255)
 end
 
-function renderer.clearCanvas(canvas, color)
+local clear_canvas = function(canvas, color)
 	local viewport = getViewport()
 	love.graphics.setCanvas(canvas)
 	love.graphics.setBlendMode('alpha')
@@ -220,7 +216,7 @@ function renderer.clearCanvas(canvas, color)
 	love.graphics.rectangle('fill', viewport.x, viewport.y, viewport.width, viewport.height)
 end
 
-function renderer.useCanvas(canvas, mode, func, alpha)
+local use_canvas = function(canvas, mode, func, alpha)
 	love.graphics.setCanvas(canvas)
 	love.graphics.setBlendMode(mode, (alpha or nil))
 	func()
@@ -229,14 +225,4 @@ function renderer.useCanvas(canvas, mode, func, alpha)
 	love.graphics.setCanvas()
 end
 
-function renderer.initialise()
-	local viewport = getViewport()
-	local shaders = data.plugins.shaders
-	renderer.mainCanvas = love.graphics.newCanvas(viewport.width, viewport.height)
-	renderer.diffuseCanvas = love.graphics.newCanvas(viewport.width, viewport.height)
-	renderer.lightCanvas = love.graphics.newCanvas(viewport.width, viewport.height)
-	renderer.lightBlockCanvas = love.graphics.newCanvas(viewport.width, viewport.height)
-	renderer.dynamicLightShader = shaders.dynamicLight
-end
-
-return renderer
+return this
