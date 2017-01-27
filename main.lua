@@ -33,6 +33,10 @@ data.plugins = {
 	juvenileFlower = require 'scripts.juvenileFlower'
 }
 
+data.libraries = {
+	vector = require 'libraries.hump.vector,
+}
+
 function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 	callHook('plugins', 'initialise')
