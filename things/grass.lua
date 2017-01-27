@@ -1,2 +1,0 @@
-local grass = {}
-return grass
