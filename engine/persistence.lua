@@ -1,89 +1,65 @@
-local plugin = {}
+local this = {}
 
--- Hooks
-
-function plugin.keypressed()
-	local keyboard = data.plugins.keyboard
-	if keyboard.keyPressed == 'saveGame' then
-		callHook('plugins', 'saveGame')
+function this.read(location)
+	if love.filesystem.isFile(location) then
+		contents = love.filesystem.read(location)
+		return loadstring(contents)
 	end
-	if keyboard.keyPressed == 'loadGame' then
-		callHook('plugins', 'loadGame')
-	end
+	return false
 end
 
--- Functions
-
-function plugin.read(location)
-	local file = io.open(location, 'r')
-	if not file then return end
-	io.input(file)
-	local contents = io.read('*all')
-	io.close(file)
-	return loadstring(contents)()
+function this.write(location)
+	local contents = 'local data = {}\n' .. this.tostring(data) .. 'return data'
+	return love.filesystem.write(location, contents)
 end
 
-function plugin.write(t, location)
-	local file = io.open(location, 'w')
-	io.output(file)
-	io.write('local data = {}\n')
-	io.write(printTable(t))
-	io.write('return data')
-	io.close(file)
-end
+function this.tostring(table, prefix, contents)
 
-function printTable(table, p)
-	local t = table or {}
-	local prefix = p or 'data'
+	-- Optional parameters
 
-	-- If any of the values is a table then we need to initialise the table first
+	prefix = prefix or 'data'
+	contents = contents or ''
 
-	for i, v in pairs(t) do
+	-- Nested table declarations
 
-		-- Format the index according to its type
+	for index, value in pairs(table) do
 
-		if type(i) == 'string' then
-			i = '\''..i..'\''
-		end
-
-		if type(v) == 'table' then
-			io.write(prefix..'['..i..'] = {}\n')
+		if type(value) == 'table' then
+			contents = contents .. prefix ..'['.. format_index(index) ..'] = {}\n'
 		end
 	end
 
-	-- Start writing the actual values
+	-- Writing data
 
-	for i, v in pairs(t) do
+	for index, value in pairs(table) do
 
-		-- Format the index according to its type
+		local formatted_value = value
 
-		if type(i) == 'string' then
-			i = '\''..i..'\''
+		if type(value) == 'string' then
+			formatted_value = "'"..value.."'"
+
+		elseif type(value) == 'boolean' then 
+			formatted_value = "'"..tostring(value).."'"
+
+		elseif type(value) == 'table' then
+			formatted_value = this.tostring(value, prefix..'['..format_index(index)..']', contents)
 		end
 
-		-- Format the value correctly according to its type
+		-- Write the formatted value
 
-		local value = v
-		if type(v) == 'string' then
-			value = '\''..value..'\''
-
-		elseif type(v) == 'boolean' then 
-			if v then
-				value = 'true'
-			else
-				value = 'false'
-			end
-
-		elseif type(v) == 'table' then
-			value = printTable(v, prefix..'['..i..']')
-		end
-
-		-- Finally write the index and value
-
-		if value and type(value) ~= 'userdata' then
-			io.write(prefix..'['..i..'] = '..value..'\n')
+		if formatted_value and type(value) ~= 'userdata' then
+			contents = contents..prefix..'['..format_index(index)..'] = '..formatted_value..'\n'
 		end
 	end
+
+	return contents
 end
 
-return plugin
+local format_index = function(index)
+	if type(index) == 'string' then
+		return "'"..index.."'"
+	end
+	return index
+end
+
+return this
