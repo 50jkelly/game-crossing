@@ -40,8 +40,8 @@ data.libraries = {
 function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 	callHook('plugins', 'initialise')
-	callHook('plugins', 'loadGraphics')
-	callHook('plugins', 'assetsLoaded')
+	callHook('plugins', 'load_graphics')
+	callHook('plugins', 'assets_loaded')
 end
 
 function love.update(dt)
@@ -49,10 +49,10 @@ function love.update(dt)
 end
 
 function love.draw()
-	callHook('plugins', 'preDraw')
+	callHook('plugins', 'pre_draw')
 	callHook('plugins', 'draw')
-	callHook('plugins', 'postDraw')
-	callHook('plugins', 'drawUI')
+	callHook('plugins', 'post_draw')
+	callHook('plugins', 'draw_ui')
 end
 
 function love.resize(width, height)
