@@ -34,7 +34,7 @@ data.plugins = {
 }
 
 data.libraries = {
-	vector = require 'libraries.hump.vector,
+	vector = require 'libraries.hump.vector',
 }
 
 function love.load()
