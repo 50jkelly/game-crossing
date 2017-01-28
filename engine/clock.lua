@@ -30,10 +30,12 @@ this.update = function(dt)
 
 	-- Increment the second
 
+	local clock_updated = false
 	since_last_update = since_last_update + dt
 	while since_last_update > in_game_second do
 		time.seconds = time.seconds + 1
 		since_last_update = since_last_update - in_game_second
+		clock_updated = true
 	end
 
 	-- Increment the minute
