@@ -57,6 +57,7 @@ this.continue_animation = function(data)
 	local animation_state = data.entity.animation_state
 	local sprite = data.entity.sprite
 
+	time_elapsed = time_elapsed + data.dt
 	if time_elapsed > 1 / frames_per_second then
 		time_elapsed = 0
 		frame_counter = frame_counter + 1
