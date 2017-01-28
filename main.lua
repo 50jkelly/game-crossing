@@ -17,7 +17,7 @@ data.plugins = {
 	things = require 'engine.things',
 	inventory = require 'engine.inventory',
 	actionBar = require 'engine.actionBar',
-	fpsTitle = require 'engine.fpsTitle',
+	fps_display = require 'engine.fps_display',
 	clock = require 'engine.clock',
 
 	constants = require 'scripts.constants',

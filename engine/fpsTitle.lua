@@ -1,7 +1,7 @@
-local fpsTitle = {}
+local this = {}
 
-function fpsTitle.update()
+function this.update()
 	love.window.setTitle("Crossing FPS: "..love.timer.getFPS())
 end
 
-return fpsTitle
+return this
