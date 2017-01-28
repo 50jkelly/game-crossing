@@ -1,23 +1,17 @@
 local this = {}
-
 local geometry
-local player
 
-function this.initialise()
+this.initialise = function()
 	geometry = data.libraries.geometry
-	player = data.plugins.player
-
 	this.x = 0
 	this.y = 0
 	this.width = love.graphics.getWidth()
 	this.height = love.graphics.getHeight()
 end
 
-function this.update()
-	if player then
-		this.x = geometry.get_center(player).x
-		this.y = geometry.get_center(player).y
-	end
+this.player_position_updated = function(player_position)
+	this.x = geometry.get_center(player_position).x
+	this.y = geometry.get_center(player_position).y
 end
 
 function this.pre_draw()
