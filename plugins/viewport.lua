@@ -10,11 +10,12 @@ this.initialise = function()
 end
 
 this.player_position_updated = function(player_position)
-	this.x = geometry.get_center(player_position).x
-	this.y = geometry.get_center(player_position).y
+	local player_center = geometry.get_center(player_position)
+	local viewport_center = geometry.get_center(this)
+
 	call_hook('plugins', 'viewport_updated', {
-		x = this.x,
-		y = this.y,
+		x = (player_center + viewport_center).x,
+		y = (player_center + viewport_center).y,
 		width = this.width,
 		height = this.height,
 	})

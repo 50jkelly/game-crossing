@@ -49,11 +49,12 @@ this.clock_updated = function(time)
 
 	local day_color = {1, 1, 1, 0}
 	local night_color = {.3, .3, .7, 0}
-
-	this.ambientColor = 
+	local ambient_color =
 		calculate_transition(time.minutes_today, sunrise, sunrise_duration, night_color, day_color) or
 		calculate_transition(time.minutes_today, sunset, sunset_duration, day_color, night_color) or
 		calculate_default_color(time.minutes_today, sunrise, sunset, day_color, night_color)
+
+	call_hook('plugins', 'ambient_color_updated', ambient_color)
 end
 
 return this

@@ -8,20 +8,20 @@ data.plugins = {
 	animation = require 'plugins.animation',
 	clock = require 'plugins.clock',
 	collision = require "plugins.collision",
-	constants = require 'plugins.constants',
 	day_night_cycle = require 'plugins.day_night_cycle',
 	fps_display = require 'plugins.fps_display',
 	keyboard = require 'plugins.keyboard',
 	persistence = require 'plugins.persistence',
 	player = require 'plugins.player',
 	renderer = require 'plugins.renderer',
-	shaders = require 'plugins.shaders',
-	sprites = require 'plugins.sprites',
 	viewport = require 'plugins.viewport',
 }
 
 data.libraries = {
+	constants = require 'libraries.constants',
+	dynamic_light_shader = require 'libraries.dynamic_light_shader',
 	geometry = require 'libraries.geometry',
+	sprites = require 'libraries.sprites',
 	vector = require 'libraries.hump.vector',
 }
 
@@ -29,7 +29,7 @@ function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 	call_hook('libraries', 'initialise')
 	call_hook('plugins', 'initialise')
-	call_hook('plugins', 'load_graphics')
+	call_hook('libraries', 'load_graphics')
 	call_hook('plugins', 'assets_loaded')
 end
 

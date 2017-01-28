@@ -1,18 +1,14 @@
 local this = {}
 
-local sprites
 local constants
-local items
-local viewport
-local geometry
-local keyboard
-local shaders
+local dynamic_light_shader
+local sprites
 
 local light_map
 local light_mask
+local ambient_color
 local diffuse_canvas
-local dynamic_light_shader
-local viewport
+local layers
 
 local draw_panel = function(x, y, width, height, background_color, border_color)
 	love.graphics.setColor(background_color)
@@ -38,24 +34,35 @@ local use_canvas = function(canvas, mode, func, alpha)
 	love.graphics.setCanvas()
 end
 
-this.viewport_updated = function(viewport_rectangle)
-	viewport = viewport_rectangle
-end
-
 this.initialise = function()
-	sprites = data.plugins.sprites
-	constants = data.plugins.constants
-	items = data.plugins.items
-	viewport = data.plugins.viewport
-	geometry = data.libraries.geometry
-	keyboard = data.plugins.keyboard
-	shaders = data.plugins.shaders
+	constants = data.libraries.constants
+	dynamic_light_shader = data.libraries.dynamic_light_shader
+	sprites = data.libraries.sprites
+
+	viewport = viewport or {
+		x = 0,
+		y = 0,
+		width = love.graphics.getWidth(),
+		height = love.graphics.getHeight()
+	}
 
 	diffuse_canvas = love.graphics.newCanvas(viewport.width, viewport.height)
 	light_map = love.graphics.newCanvas(viewport.width, viewport.height)
 	light_mask = love.graphics.newCanvas(viewport.width, viewport.height)
+	layers = {{}, {}, {}, {}, {}, {}}
+	ambient_color = {1, 1, 1, 0}
+end
 
-	dynamic_light_shader = shaders.dynamic_light
+this.viewport_updated = function(viewport_rectangle)
+	viewport = viewport_rectangle
+end
+
+this.ambient_color_updated = function(color)
+	ambient_color = color
+end
+
+this.render_entity = function(entity)
+	table.insert(layers[entity.layer], entity)
 end
 
 this.draw = function()
@@ -63,7 +70,7 @@ this.draw = function()
 	clear_canvas(light_map, constants.black)
 	clear_canvas(light_mask, constants.white)
 
-	for layer_index, layer in pairs(this.to_draw) do
+	for layer_index, layer in pairs(layers) do
 
 		-- Entity sort
 
@@ -76,7 +83,7 @@ this.draw = function()
 			-- Render diffuse canvas
 
 			use_canvas(diffuse_canvas, 'alpha', function()
-				love.graphics.draw(entity.sprite, entity.x, entity.y)
+				love.graphics.draw(sprites.get_sprite(entity.sprite).sprite, entity.x, entity.y)
 				love.graphics.setColor(constants.white)
 			end)
 
@@ -102,11 +109,12 @@ this.draw = function()
 
 		-- Render shader
 
-		dynamic_light_shader.shader:send(dynamic_light_shader.shader)
-		dynamic_light_shader.shader:send('light_mask', light_mask)
+		dynamic_light_shader.send('light_map', light_map)
+		dynamic_light_shader.send('light_mask', light_mask)
+		dynamic_light_shader.send('ambient_color', ambient_color)
 
 		use_canvas(nil, 'alpha', function()
-			love.graphics.setShader(dynamic_light_shader.shader)
+			love.graphics.setShader(dynamic_light_shader.get_shader())
 			love.graphics.draw(diffuse_canvas, viewport.x, viewport.y)
 		end, 'premultiplied')
 
