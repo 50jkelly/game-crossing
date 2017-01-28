@@ -46,8 +46,8 @@ function love.draw()
 end
 
 function love.resize(width, height)
-	data.plugins.viewport.set_dimensions(width, height)
-	data.plugins.renderer.initialise()
+	plugins.viewport.set_dimensions(width, height)
+	plugins.renderer.initialise()
 end
 
 function call_hook(collection, method, hookData)
