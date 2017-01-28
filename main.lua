@@ -19,7 +19,6 @@ data.plugins = {
 
 	constants = require 'scripts.constants',
 	dayNightCycle = require 'scripts.dayNightCycle',
-
 	player = require 'scripts.player',
 }
 
@@ -30,6 +29,7 @@ data.libraries = {
 
 function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
+	callHook('libraries', 'initialise')
 	callHook('plugins', 'initialise')
 	callHook('plugins', 'load_graphics')
 	callHook('plugins', 'assets_loaded')
