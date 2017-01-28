@@ -2,8 +2,7 @@ local this = {}
 
 function this.read(location)
 	if love.filesystem.isFile(location) then
-		contents = love.filesystem.read(location)
-		return loadstring(contents)
+		return loadfile(location)()
 	end
 	return false
 end
