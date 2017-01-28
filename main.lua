@@ -44,15 +44,12 @@ function love.update(dt)
 end
 
 function love.draw()
-	call_hook('plugins', 'pre_draw')
 	call_hook('plugins', 'draw')
-	call_hook('plugins', 'post_draw')
 	call_hook('plugins', 'draw_ui')
 end
 
 function love.resize(width, height)
-	data.plugins.viewport.width = width
-	data.plugins.viewport.height = height
+	data.plugins.viewport.set_dimensions(width, height)
 	data.plugins.renderer.initialise()
 end
 

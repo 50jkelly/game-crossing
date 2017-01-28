@@ -29,7 +29,6 @@ this.update = function(dt)
 	delta_time = dt
 	call_hook('plugins', 'player_position_updated', this)
 	call_hook('plugins', 'continue_animation', { entity = this, dt = dt, })
-	call_hook('plugins', 'render_entity', this)
 end
 
 this.key_down = function(key)

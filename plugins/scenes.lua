@@ -1,16 +1,24 @@
 local this = {}
-local scenes = {}
-local geometry
-local viewport
+local current_scene
 
-this.initialise = function()
-	geometry = data.libraries.geometry
-	scenes['world'] = {}
-	current_scene = 'world'
+local scenes = {
+	world = require 'scenes.world',
+}
+
+local call_scene_hook = function(name, data)
+	if current_scene and scenes[current_scene][name] then
+		scenes[current_scene][name](data)
+	end
 end
 
-this.viewport_updated = function(new_viewport)
-	viewport = new_viewport
+this.initialise = function()
+	current_scene = 'world'
+
+	for _, scene in pairs(scenes) do
+		if scene.initialise then
+			scene.initialise()
+		end
+	end
 end
 
 this.change_current_scene = function(scene)
@@ -20,24 +28,21 @@ this.change_current_scene = function(scene)
 end
 
 this.add_to_scene = function(data)
-	scenes[data.scene] = scenes[data.scene] or {}
-	table.insert(scenes[data.scene], data.entity)
+	if scenes[data.scene] then
+		scenes[data.scene].add_entity(data.entity)
+	end
 end
 
 this.update = function(dt)
-	for _, entity in ipairs(scenes[current_scene]) do
-		entity.update(dt)
-		
-		if geometry.overlapping(viewport, entity) then
-			call_hook('plugins', 'render_entity', entity)
-		end
-	end
+	call_scene_hook('update', dt)
 end
 
 this.key_down = function(key)
-	for _, entity in ipairs(scenes[current_scene]) do
-		entity.key_down(key)
-	end
+	call_scene_hook('key_down', key)
+end
+
+this.viewport_updated = function(new_viewport)
+	call_scene_hook('viewport_updated', new_viewport)
 end
 
 return this

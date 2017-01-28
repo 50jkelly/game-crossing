@@ -12,6 +12,12 @@ this.initialise = function()
 	call_hook('plugins', 'viewport_updated', this)
 end
 
+this.set_dimensions = function(width, height)
+	this.width = width
+	this.height = height
+	call_hook('plugins', 'viewport_updated', this)
+end
+
 this.player_position_updated = function(player_position)
 	local player_center = geometry.get_center(player_position)
 	local viewport_center = vector(this.width, this.height) / 2

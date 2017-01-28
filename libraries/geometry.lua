@@ -39,7 +39,7 @@ function this.overlapping(rectangle1, rectangle2)
 	if is_rectangle(rectangle1) and is_rectangle(rectangle2) then
 		return not (
 			rectangle1.x + rectangle1.width < rectangle2.x or
-			rectangle2.x + rectangle2.width < rectangle2.x or
+			rectangle2.x + rectangle2.width < rectangle1.x or
 			rectangle1.y + rectangle1.height < rectangle2.y or
 			rectangle2.y + rectangle2.height < rectangle1.y)
 	end

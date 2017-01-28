@@ -121,7 +121,7 @@ this.draw = function()
 
 		-- Reset layer
 
-		layer = {}
+		layers[layer_index] = {}
 	end
 end
 
