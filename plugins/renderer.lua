@@ -22,7 +22,7 @@ local clear_canvas = function(canvas, color)
 	love.graphics.setCanvas(canvas)
 	love.graphics.setBlendMode('alpha')
 	love.graphics.setColor(color)
-	love.graphics.rectangle('fill', viewport.x, viewport.y, viewport.width, viewport.height)
+	love.graphics.rectangle('fill', 0, 0, viewport.width, viewport.height)
 end
 
 local use_canvas = function(canvas, mode, func, alpha)
@@ -39,13 +39,6 @@ this.initialise = function()
 	dynamic_light_shader = data.libraries.dynamic_light_shader
 	sprites = data.libraries.sprites
 
-	viewport = viewport or {
-		x = 0,
-		y = 0,
-		width = love.graphics.getWidth(),
-		height = love.graphics.getHeight()
-	}
-
 	diffuse_canvas = love.graphics.newCanvas(viewport.width, viewport.height)
 	light_map = love.graphics.newCanvas(viewport.width, viewport.height)
 	light_mask = love.graphics.newCanvas(viewport.width, viewport.height)
@@ -53,8 +46,8 @@ this.initialise = function()
 	ambient_color = {1, 1, 1, 0}
 end
 
-this.viewport_updated = function(viewport_rectangle)
-	viewport = viewport_rectangle
+this.viewport_updated = function(new_rectangle)
+	viewport = new_rectangle
 end
 
 this.ambient_color_updated = function(color)
@@ -69,6 +62,7 @@ this.draw = function()
 
 	clear_canvas(light_map, constants.black)
 	clear_canvas(light_mask, constants.white)
+	clear_canvas(diffuse_canvas, constants.white)
 
 	for layer_index, layer in pairs(layers) do
 
@@ -78,6 +72,9 @@ this.draw = function()
 			return a.height + a.y < b.height + b.y
 		end)
 
+		love.graphics.push()
+		love.graphics.translate(-viewport.x, -viewport.y)
+
 		for _, entity in ipairs(layer) do
 
 			-- Render diffuse canvas
@@ -86,6 +83,7 @@ this.draw = function()
 				love.graphics.draw(sprites.get_sprite(entity.sprite).sprite, entity.x, entity.y)
 				love.graphics.setColor(constants.white)
 			end)
+
 
 			-- Render light map
 
@@ -107,6 +105,7 @@ this.draw = function()
 			end)
 		end
 
+
 		-- Render shader
 
 		dynamic_light_shader.send('light_map', light_map)
@@ -117,6 +116,8 @@ this.draw = function()
 			love.graphics.setShader(dynamic_light_shader.get_shader())
 			love.graphics.draw(diffuse_canvas, viewport.x, viewport.y)
 		end, 'premultiplied')
+
+		love.graphics.pop()
 
 		-- Reset layer
 

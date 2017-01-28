@@ -12,9 +12,13 @@ data.plugins = {
 	fps_display = require 'plugins.fps_display',
 	keyboard = require 'plugins.keyboard',
 	persistence = require 'plugins.persistence',
-	player = require 'plugins.player',
 	renderer = require 'plugins.renderer',
+	scenes = require 'plugins.scenes',
 	viewport = require 'plugins.viewport',
+}
+
+data.entities = {
+	player = require 'entities.player',
 }
 
 data.libraries = {
@@ -29,6 +33,7 @@ function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 	call_hook('libraries', 'initialise')
 	call_hook('plugins', 'initialise')
+	call_hook('entities', 'initialise')
 	call_hook('libraries', 'load_graphics')
 	call_hook('plugins', 'assets_loaded')
 end
