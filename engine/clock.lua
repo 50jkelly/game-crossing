@@ -6,10 +6,10 @@ local hours_in_day = 24
 local since_last_update = 0
 
 local time = {
-	days=0,
-	hours=12,
-	minutes=0,
-	seconds=0
+	days = 0,
+	hours = 12,
+	minutes = 0,
+	seconds = 0,
 }
 
 this.initialise = function()
