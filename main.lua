@@ -1,10 +1,7 @@
--- Data
-data = {
-	state = 'game'
-}
+state = 'game'
 
 -- Plugins
-data.plugins = {
+plugins = {
 	animation = require 'plugins.animation',
 	clock = require 'plugins.clock',
 	collision = require "plugins.collision",
@@ -17,11 +14,11 @@ data.plugins = {
 	viewport = require 'plugins.viewport',
 }
 
-data.entities = {
+entities = {
 	player = require 'entities.player',
 }
 
-data.libraries = {
+libraries = {
 	constants = require 'libraries.constants',
 	dynamic_light_shader = require 'libraries.dynamic_light_shader',
 	geometry = require 'libraries.geometry',
@@ -54,7 +51,7 @@ function love.resize(width, height)
 end
 
 function call_hook(collection, method, hookData)
-	for _, value in pairs(data[collection]) do
+	for _, value in pairs(_G[collection]) do
 		if value[method] ~= nil then
 			value[method](hookData)
 		end

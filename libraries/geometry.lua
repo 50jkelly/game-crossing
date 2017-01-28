@@ -10,7 +10,7 @@ local is_rectangle = function(entity)
 end
 
 function this.initialise()
-	vector = data.libraries.vector
+	vector = libraries.vector
 end
 
 function this.rectangle(entity)

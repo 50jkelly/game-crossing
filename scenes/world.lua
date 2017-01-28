@@ -4,7 +4,7 @@ local geometry
 local viewport
 
 this.initialise = function()
-	geometry = data.libraries.geometry
+	geometry = libraries.geometry
 	this.x = -3200
 	this.y = -3200
 	this.width = 6400

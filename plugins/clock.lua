@@ -20,7 +20,7 @@ this.update = function(dt)
 
 	-- State check
 
-	if data.state ~= 'game' then
+	if state ~= 'game' then
 		return
 	end
 
@@ -72,11 +72,11 @@ this.update = function(dt)
 end
 
 this.save_game = function()
-	data.plugins.persistence.write(time, 'saves/clock.lua')
+	plugins.persistence.write(time, 'saves/clock.lua')
 end
 
 this.load_game = function()
-	time = data.plugins.persistence.read('saves/clock.lua')
+	time = plugins.persistence.read('saves/clock.lua')
 end
 
 return this

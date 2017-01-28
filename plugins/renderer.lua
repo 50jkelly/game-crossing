@@ -35,9 +35,9 @@ local use_canvas = function(canvas, mode, func, alpha)
 end
 
 this.initialise = function()
-	constants = data.libraries.constants
-	dynamic_light_shader = data.libraries.dynamic_light_shader
-	sprites = data.libraries.sprites
+	constants = libraries.constants
+	dynamic_light_shader = libraries.dynamic_light_shader
+	sprites = libraries.sprites
 
 	diffuse_canvas = love.graphics.newCanvas(viewport.width, viewport.height)
 	light_map = love.graphics.newCanvas(viewport.width, viewport.height)

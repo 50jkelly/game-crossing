@@ -4,7 +4,7 @@ local delta_time
 
 this.initialise = function()
 	-- Libraries
-	movement = data.libraries.movement
+	movement = libraries.movement
 
 	-- Position
 	this.x = 0

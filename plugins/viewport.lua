@@ -3,8 +3,8 @@ local geometry
 local vector
 
 this.initialise = function()
-	geometry = data.libraries.geometry
-	vector = data.libraries.vector
+	geometry = libraries.geometry
+	vector = libraries.vector
 	this.x = 0
 	this.y = 0
 	this.width = love.graphics.getWidth()
