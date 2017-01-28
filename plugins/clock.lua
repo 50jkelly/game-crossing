@@ -1,5 +1,5 @@
 local this = {} 
-local game_seconds_per_real_second = 100
+local game_seconds_per_real_second = 20000
 local seconds_in_minute = 60
 local minutes_in_hour = 60
 local hours_in_day = 24
