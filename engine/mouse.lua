@@ -1,2 +1,0 @@
-local mouse = {}
-return mouse
