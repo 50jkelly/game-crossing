@@ -56,7 +56,7 @@ function this.draw()
 			use_canvas(light_map, 'add', function()
 				if entity.light_sprite then
 					love.graphics.draw(
-						entity.light_sprite
+						entity.light_sprite,
 						geometry.get_center(entity).x - geometry.get_center(entity.light_sprite).x + (entity.light_offset.x or 0),
 						geometry.get_center(entity).y - geometry.get_center(entity.light_sprite).y + (entity.light_offset.y or 0))
 				end
