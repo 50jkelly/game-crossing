@@ -14,10 +14,6 @@ plugins = {
 	viewport = require 'plugins.viewport',
 }
 
-entities = {
-	player = require 'entities.player',
-}
-
 libraries = {
 	constants = require 'libraries.constants',
 	dynamic_light_shader = require 'libraries.dynamic_light_shader',
@@ -27,11 +23,17 @@ libraries = {
 	vector = require 'libraries.hump.vector',
 }
 
+scenes = {
+	world = require 'scenes.world',
+}
+
+entities = {
+	player = require 'entities.player',
+}
+
 function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
-	call_hook('libraries', 'initialise')
-	call_hook('plugins', 'initialise')
-	call_hook('entities', 'initialise')
+	call_hook({ 'libraries', 'plugins', 'scenes', 'entities' }, 'initialise')
 	call_hook('libraries', 'load_graphics')
 	call_hook('plugins', 'assets_loaded')
 end
@@ -46,14 +48,19 @@ function love.draw()
 end
 
 function love.resize(width, height)
-	plugins.viewport.set_dimensions(width, height)
-	plugins.renderer.initialise()
+	call_hook('plugins', 'window_resized', libraries.vector(width, height))
 end
 
-function call_hook(collection, method, hookData)
-	for _, value in pairs(_G[collection]) do
-		if value[method] ~= nil then
-			value[method](hookData)
+function call_hook(collections, method, hookData)
+	if type(collections) == 'string' then
+		collections = { collections }
+	end
+
+	for _, collection in ipairs(collections) do
+		for _, value in pairs(_G[collection]) do
+			if value[method] ~= nil then
+				value[method](hookData)
+			end
 		end
 	end
 end

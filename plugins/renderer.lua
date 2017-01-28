@@ -1,9 +1,5 @@
 local this = {}
 
-local constants
-local dynamic_light_shader
-local sprites
-
 local light_map
 local light_mask
 local ambient_color
@@ -35,19 +31,22 @@ local use_canvas = function(canvas, mode, func, alpha)
 end
 
 this.initialise = function()
-	constants = libraries.constants
-	dynamic_light_shader = libraries.dynamic_light_shader
-	sprites = libraries.sprites
-
-	diffuse_canvas = love.graphics.newCanvas(viewport.width, viewport.height)
-	light_map = love.graphics.newCanvas(viewport.width, viewport.height)
-	light_mask = love.graphics.newCanvas(viewport.width, viewport.height)
 	layers = {{}, {}, {}, {}, {}, {}}
 	ambient_color = {1, 1, 1, 0}
+
+	this.window_resized(libraries.vector(
+		love.graphics.getWidth(),
+		love.graphics.getHeight()))
 end
 
 this.viewport_updated = function(new_rectangle)
 	viewport = new_rectangle
+end
+
+this.window_resized = function(dimensions)
+	diffuse_canvas = love.graphics.newCanvas(dimensions:unpack())
+	light_map = love.graphics.newCanvas(dimensions:unpack())
+	light_mask = love.graphics.newCanvas(dimensions:unpack())
 end
 
 this.ambient_color_updated = function(color)
@@ -60,9 +59,9 @@ end
 
 this.draw = function()
 
-	clear_canvas(light_map, constants.black)
-	clear_canvas(light_mask, constants.white)
-	clear_canvas(diffuse_canvas, constants.white)
+	clear_canvas(light_map, libraries.constants.black)
+	clear_canvas(light_mask, libraries.constants.white)
+	clear_canvas(diffuse_canvas, libraries.constants.white)
 
 	for layer_index, layer in pairs(layers) do
 
@@ -80,8 +79,8 @@ this.draw = function()
 			-- Render diffuse canvas
 
 			use_canvas(diffuse_canvas, 'alpha', function()
-				love.graphics.draw(sprites.get_sprite(entity.sprite).sprite, entity.x, entity.y)
-				love.graphics.setColor(constants.white)
+				love.graphics.draw(libraries.sprites.get_sprite(entity.sprite).sprite, entity.x, entity.y)
+				love.graphics.setColor(libraries.constants.white)
 			end)
 
 
@@ -108,12 +107,12 @@ this.draw = function()
 
 		-- Render shader
 
-		dynamic_light_shader.send('light_map', light_map)
-		dynamic_light_shader.send('light_mask', light_mask)
-		dynamic_light_shader.send('ambient_color', ambient_color)
+		libraries.dynamic_light_shader.send('light_map', light_map)
+		libraries.dynamic_light_shader.send('light_mask', light_mask)
+		libraries.dynamic_light_shader.send('ambient_color', ambient_color)
 
 		use_canvas(nil, 'alpha', function()
-			love.graphics.setShader(dynamic_light_shader.get_shader())
+			love.graphics.setShader(libraries.dynamic_light_shader.get_shader())
 			love.graphics.draw(diffuse_canvas, viewport.x, viewport.y)
 		end, 'premultiplied')
 

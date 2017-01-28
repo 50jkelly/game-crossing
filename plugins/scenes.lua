@@ -13,12 +13,6 @@ end
 
 this.initialise = function()
 	current_scene = 'world'
-
-	for _, scene in pairs(scenes) do
-		if scene.initialise then
-			scene.initialise()
-		end
-	end
 end
 
 this.change_current_scene = function(scene)

@@ -12,9 +12,8 @@ this.initialise = function()
 	call_hook('plugins', 'viewport_updated', this)
 end
 
-this.set_dimensions = function(width, height)
-	this.width = width
-	this.height = height
+this.window_resized = function(dimensions)
+	this.width, this.height = dimensions:unpack()
 	call_hook('plugins', 'viewport_updated', this)
 end
 
