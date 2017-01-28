@@ -51,6 +51,10 @@ function this.load_graphics()
 	load_sprite('player_walk_right_6', 'images/player_walk_right_6.png')
 	load_sprite('player_walk_right_7', 'images/player_walk_right_7.png')
 	load_sprite('player_walk_right_8', 'images/player_walk_right_8.png')
+
+	-- Plants
+
+	load_sprite('grass', 'images/grass.png')
 end
 
 function this.get_sprite(name)
