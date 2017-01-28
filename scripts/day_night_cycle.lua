@@ -1,6 +1,6 @@
-local dayNightCycle = {}
+local this = {}
 
-function dayNightCycle.update()
+function this.update()
 	local clock = data.plugins.clock
 	if clock then
 
@@ -27,7 +27,7 @@ function dayNightCycle.update()
 		local day_color = {1, 1, 1, 0}
 		local night_color = {.3, .3, .7, 0}
 
-		dayNightCycle.ambientColor = 
+		this.ambientColor = 
 			calculate_transition(minutes, sunrise, sunrise_duration, night_color, day_color) or
 			calculate_transition(minutes, sunset, sunset_duration, day_color, night_color) or
 			calculate_default_color(minutes, sunrise, sunset, day_color, night_color)
@@ -64,4 +64,4 @@ function calculate_default_color(minutes, sunrise, sunset, day_color, night_colo
 	end
 end
 
-return dayNightCycle
+return this

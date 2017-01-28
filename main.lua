@@ -18,7 +18,7 @@ data.plugins = {
 	clock = require 'engine.clock',
 
 	constants = require 'scripts.constants',
-	dayNightCycle = require 'scripts.dayNightCycle',
+	day_night_cycle = require 'scripts.day_night_cycle',
 	player = require 'scripts.player',
 }
 
