@@ -19,7 +19,9 @@ local movements = {
 }
 
 this.move = function(entity, direction, dt)
-	entity.x, entity.y = movements[direction](entity, dt)
+	if movements[direction] then
+		entity.x, entity.y = movements[direction](entity, dt)
+	end
 end
 
 return this
