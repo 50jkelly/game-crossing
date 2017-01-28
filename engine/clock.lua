@@ -1,9 +1,9 @@
-local clock = {} 
-local gameSecondsInRealSecond = 5
-local secondsInMinute = 60
-local minutesInHour = 60
-local hoursInDay = 24
-local sinceLastUpdate = 0
+local this = {} 
+local game_seconds_per_real_second = 100
+local seconds_in_minute = 60
+local minutes_in_hour = 60
+local hours_in_day = 24
+local since_last_update = 0
 
 local time = {
 	days=0,
@@ -12,13 +12,11 @@ local time = {
 	seconds=0
 }
 
--- Hooks
-
-function clock.initialise()
-	clock.loadGame()
+this.initialise = function()
+	this.load_game()
 end
 
-function clock.update(dt)
+this.update = function(dt)
 
 	-- State check
 
@@ -26,66 +24,57 @@ function clock.update(dt)
 		return
 	end
 
-	-- Get the maximum length of one in game second in real life seconds
+	-- Convert from real time
 
-	local inGameSecond = 1 / 20000
+	local in_game_second = 1 / game_seconds_per_real_second
 
-	-- If more time has elapsed since the last update than one in-game second, we 
-	-- increment our seconds counter
+	-- Increment the second
 
-	sinceLastUpdate = sinceLastUpdate + dt
-	while sinceLastUpdate > inGameSecond do
+	since_last_update = since_last_update + dt
+	while since_last_update > in_game_second do
 		time.seconds = time.seconds + 1
-		sinceLastUpdate = sinceLastUpdate - inGameSecond
+		since_last_update = since_last_update - in_game_second
 	end
 
-	-- Increment the minute if we have too many seconds
+	-- Increment the minute
 
-	if time.seconds >= secondsInMinute then
+	if time.seconds >= seconds_in_minute then
 		time.minutes = time.minutes + 1
 		time.seconds = 0
 	end
 
-	-- Increment the hour if we have too many minutes
+	-- Increment the hour
 
-	if time.minutes >= minutesInHour then
+	if time.minutes >= minutes_in_hour then
 		time.hours = time.hours + 1
 		time.minutes = 0
 	end
 
-	-- Increment the day if we have too many hours
+	-- Increment the day
 
-	if time.hours >= hoursInDay then
+	if time.hours >= hours_in_day then
 		time.days = time.days + 1
 		time.hours = 0
 	end
+
+	-- Publish results
+
+	if clock_updated then
+		call_hook('plugins', 'clock_updated', {
+			raw_time = time,
+			string_time = string.format('%02d:%02d:%02d', time.hours, time.minutes, time.seconds),
+			minutes_today = time.hours * minutes_in_hour + time.minutes,
+			minutes_since_start = (time.days * hours_in_day + time.hours) * minutes_in_hour + time.minutes
+		})
+	end
 end
 
-function clock.saveGame()
+this.save_game = function()
 	data.plugins.persistence.write(time, 'saves/clock.lua')
 end
 
-function clock.loadGame()
+this.load_game = function()
 	time = data.plugins.persistence.read('saves/clock.lua')
 end
 
--- Functions
-
-function clock.getTime(raw)
-	if raw then
-		return time
-	else
-		return string.format("%02d:%02d:%02d", time.hours, time.minutes, time.seconds)
-	end
-end
-
-function clock.getMinutes(timeFrame)
-	if timeFrame == 'day'then
-		return time.hours * 60 + time.minutes
-	end
-
-	local hours = time.days * 24 + time.hours
-	return hours * 60 + time.minutes
-end
-
-return clock
+return this
