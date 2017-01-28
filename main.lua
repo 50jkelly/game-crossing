@@ -5,26 +5,24 @@ data = {
 
 -- Plugins
 data.plugins = {
-	persistence = require 'engine.persistence',
-	viewport = require 'engine.viewport',
-	sprites = require 'engine.sprites',
-	renderer = require 'engine.renderer',
-	shaders = require 'engine.shaders',
-	keyboard = require 'engine.keyboard',
-	collision = require "engine.collision",
-	animation = require 'engine.animation',
-	things = require 'engine.things',
-	fps_display = require 'engine.fps_display',
-	clock = require 'engine.clock',
-
-	constants = require 'scripts.constants',
-	day_night_cycle = require 'scripts.day_night_cycle',
-	player = require 'scripts.player',
+	animation = require 'plugins.animation',
+	clock = require 'plugins.clock',
+	collision = require "plugins.collision",
+	constants = require 'plugins.constants',
+	day_night_cycle = require 'plugins.day_night_cycle',
+	fps_display = require 'plugins.fps_display',
+	keyboard = require 'plugins.keyboard',
+	persistence = require 'plugins.persistence',
+	player = require 'plugins.player',
+	renderer = require 'plugins.renderer',
+	shaders = require 'plugins.shaders',
+	sprites = require 'plugins.sprites',
+	viewport = require 'plugins.viewport',
 }
 
 data.libraries = {
+	geometry = require 'libraries.geometry',
 	vector = require 'libraries.hump.vector',
-	geometry = require 'libraries.geometry'
 }
 
 function love.load()
