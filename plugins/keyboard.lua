@@ -1,6 +1,6 @@
-local keyboard = {}
+local this = {}
 
-keyboard.keys = {
+this.keys = {
 	up = "w",
 	down = "s",
 	left= "a",
@@ -22,40 +22,29 @@ keyboard.keys = {
 	actionBar10 = '0'
 }
 
--- Hooks
-
-function keyboard.update()
-	local things = data.plugins.things
-	local player = data.plugins.player
-
-	-- Movement
-
-	local isMovementKey =
-	keyboard.keyPressed == 'up'
-	or keyboard.keyPressed == 'down'
-	or keyboard.keyPressed == 'left'
-	or keyboard.keyPressed == 'right'
-
-	if data.state == 'game' and things and isMovementKey then
-		things.setProperty(player.getId(), 'moveState', 'move_'..keyboard.keyPressed)
-		things.setProperty(player.getId(), 'animationState', 'move_'..keyboard.keyPressed)
-	end
-
-end
-
-function love.keypressed(key)
-	for k, _ in pairs(keyboard.keys) do
-		if keyboard.keys[k] == key then
-			keyboard.keyPressed = k
-			callHook('plugins', 'keypressed', k)
+this.update = function()
+	for key_name, key_code in pairs(this.keys) do
+		if love.keyboard.isDown(key_code) then
+			call_hook('plugins', 'key_down', key_name)
 		end
 	end
 end
 
-function love.keyreleased(key)
-	if keyboard.keys[keyboard.keyPressed] == key then
-		keyboard.keyPressed = nil
+love.keypressed = function(key_code)
+	for key_name, _ in pairs(this.keys) do
+		if this.keys[key_name] == key_code then
+			this.pressed = key_name
+			call_hook('plugins', 'key_pressed', key_name)
+		end
 	end
 end
 
-return keyboard
+love.keyreleased = function(key_code)
+	if this.keys[this.key_pressed] == key_code then
+		local key_name = this.pressed
+		this.pressed = nil
+		call_hook('plugins', 'key_released', key_name)
+	end
+end
+
+return this

@@ -25,6 +25,7 @@ data.libraries = {
 	constants = require 'libraries.constants',
 	dynamic_light_shader = require 'libraries.dynamic_light_shader',
 	geometry = require 'libraries.geometry',
+	movement = require 'libraries.movement',
 	sprites = require 'libraries.sprites',
 	vector = require 'libraries.hump.vector',
 }

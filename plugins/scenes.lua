@@ -34,4 +34,10 @@ this.update = function(dt)
 	end
 end
 
+this.key_down = function(key)
+	for _, entity in ipairs(scenes[current_scene]) do
+		entity.key_down(key)
+	end
+end
+
 return this
