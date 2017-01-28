@@ -12,6 +12,12 @@ end
 this.player_position_updated = function(player_position)
 	this.x = geometry.get_center(player_position).x
 	this.y = geometry.get_center(player_position).y
+	call_hook('viewport_updated', {
+		x = this.x,
+		y = this.y,
+		width = this.width,
+		height = this.height,
+	})
 end
 
 function this.pre_draw()
