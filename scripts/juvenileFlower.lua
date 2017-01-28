@@ -1,2 +1,0 @@
-local juvenileFlower = {}
-return juvenileFlower

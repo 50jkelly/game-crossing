@@ -11,26 +11,16 @@ data.plugins = {
 	renderer = require 'engine.renderer',
 	shaders = require 'engine.shaders',
 	keyboard = require 'engine.keyboard',
-	mouse = require 'engine.mouse',
 	collision = require "engine.collision",
 	animation = require 'engine.animation',
 	things = require 'engine.things',
-	inventory = require 'engine.inventory',
-	actionBar = require 'engine.actionBar',
 	fps_display = require 'engine.fps_display',
 	clock = require 'engine.clock',
 
 	constants = require 'scripts.constants',
-	events = require 'scripts.events',
-	items = require 'scripts.items',
 	dayNightCycle = require 'scripts.dayNightCycle',
-	dialogs = require 'scripts.dialogs',
 
 	player = require 'scripts.player',
-	grass = require 'scripts.grass',
-	trees = require 'scripts.trees',
-	flowers = require 'scripts.flowers',
-	juvenileFlower = require 'scripts.juvenileFlower'
 }
 
 data.libraries = {
