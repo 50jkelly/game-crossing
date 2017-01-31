@@ -1,5 +1,12 @@
 local this = {}
 
+local format_index = function(index)
+	if type(index) == 'string' then
+		return "'"..index.."'"
+	end
+	return index
+end
+
 function this.read(location)
 	if love.filesystem.isFile(location) then
 		return loadfile(location)()
@@ -7,7 +14,7 @@ function this.read(location)
 	return false
 end
 
-function this.write(location)
+function this.write(data, location)
 	local contents = 'local data = {}\n' .. this.tostring(data) .. 'return data'
 	return love.filesystem.write(location, contents)
 end
@@ -52,13 +59,6 @@ function this.tostring(table, prefix, contents)
 	end
 
 	return contents
-end
-
-local format_index = function(index)
-	if type(index) == 'string' then
-		return "'"..index.."'"
-	end
-	return index
 end
 
 return this

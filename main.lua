@@ -3,45 +3,32 @@ function love.load()
 	-- Game state
 	state = 'game'
 	-- In game time
-	time = {days = 0, hours = 12, minutes = 0, seconds = 0}
+	time = { years=0, months=0, days=0, hours=12, minutes=0, seconds=0, minutes_today=0 }
 	-- Graphics
-	sprites, light_maps, light_masks = {}, {}, {}
-	sprites.grass = love.graphics.newImage('images/grass.png')
-	sprites.tree_1_bottom = love.graphics.newImage('images/trees/tree_1_bottom.png')
-	sprites.tree_1_top = love.graphics.newImage('images/trees/tree_1_top.png')
-	player_sprites = {up = {}, down = {}, left = {}, right = {}}
-	for state, _ in pairs(player_sprites) do for i=1, 8, 1 do
-		table.insert(player_sprites[state], love.graphics.newImage('images/player_walk_'..state..'_'..i..'.png'))
-	end end
-	light_maps.player = love.graphics.newImage('images/light_maps/player_light.png')
-	light_masks.tree_1_top = love.graphics.newImage('images/light_masks/tree_1_light_mask.png')
+	graphics = {}
+	for _, row in ipairs(load_file('data/graphics.lua')) do
+		graphics[row.category..row.name..row.state] = graphics[row.category..row.name..row.state] or {}
+		graphics[row.category..row.name..row.state][row.frame] = love.graphics.newImage(row.path)
+	end
 	-- Objects
 	objects, to_draw = {{}, {}, {}}, {{}, {}, {}}
-	-- Grass
-	for x=-5000, 5000, 320 do for y=-5000, 5000, 320 do
-		table.insert(objects[1], { sprite = sprites.grass, x = x, y = y, width = 320, height = 320, scene = 1, })
-	end end
-	-- Player
-	table.insert(objects[2], {sprite = player_sprites['down'][1], light_map = light_maps.player, state = 'down', animating = false, fps = 10, frame = 1, x = 0, y = 0, width = 20, height = 26, speed = 100, scene = 1, collides = true, })
+	for _, row in ipairs(load_file('data/objects.lua')) do
+		local object = {}
+		for index, value in pairs(row) do object[index] = value end
+		object.light_map = graphics['light_maps'..row.light_map..row.light_map_state][1]
+		object.light_mask = graphics['light_masks'..row.light_mask..row.light_mask_state][1]
+		object.sprite = graphics['sprites'..row.name..row.state][1]
+		table.insert(objects[row.layer], object)
+	end
 	player = objects[2][1]
-	-- Trees
-	table.insert(objects[2], { sprite = sprites.tree_1_bottom, x = 100, y = 100, width = 30, height = 30, scene = 1, collides = true, })
-	table.insert(objects[3], { sprite = sprites.tree_1_top, light_mask = light_masks.tree_1_top, x = 40, y = -80, width = 150, height = 191, scene = 1, collides = false, })
 	-- Viewport
 	love.resize(love.graphics.getWidth(), love.graphics.getHeight())
 	-- Scene
 	current_scene = 1
+	-- Day/night cycle
+	ambient_colors = load_file('data/ambient_colors.lua')
 	-- Shaders
-	light_shader = love.graphics.newShader([[
-	extern Image light_map;
-	extern Image light_mask;
-	extern vec4 ambient_color;
-	vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
-		vec4 pixel_color = Texel(texture, texture_coords);
-		vec4 light_color = Texel(light_map, texture_coords);
-		vec4 light_mask_color = Texel(light_mask, texture_coords);
-		vec4 result = (light_color * light_mask_color + ambient_color) * pixel_color;
-		return min(pixel_color, result);}]])
+	light_shader = love.graphics.newShader(load_file('data/light_shader.lua'))
 end
 
 function love.update(dt)
@@ -50,53 +37,60 @@ function love.update(dt)
 	if state == 'game' then
 		-- In game time
 		time_elapsed = (time_elapsed or 0) + dt
-		while time_elapsed > 1 / 20000 do
+		while time_elapsed > 1 / 5000 do
 			time.seconds = time.seconds + 1
-			time_elapsed = time_elapsed - 1 / 20000
+			time_elapsed = time_elapsed - 1 / 5000
 		end
 		increment_time('minutes', 'seconds', 60)
 		increment_time('hours', 'minutes', 60)
 		increment_time('days', 'hours', 24)
-		time.total_minutes = (time.days * 24 + time.hours) * 60 + time.minutes
-		time.minutes_today = time.hours * 60 + time.minutes
+		increment_time('months', 'days', 7)
+		increment_time('years', 'months', 12)
+		time.minutes_today = math.min(24 * 60, time.hours * 60 + time.minutes)
 		-- Viewport
 		viewport.x = (player.x + player.width / 2) - viewport.width / 2
 		viewport.y = (player.y + player.height / 2) - viewport.height / 2
-		-- Animation
-		animation_time_elapsed = (animation_time_elapsed or 0) + dt
-		while animation_time_elapsed > 1 / player.fps do
-			if player.animating then
-				player.frame = math.max(1, (player.frame + 1) % 9)
-			end
-			animation_time_elapsed = animation_time_elapsed - 1 / player.fps
-			player.sprite = player_sprites[player.state][player.frame]
-		end
 		-- Movement
+		movement_table = {
+			{ key='w',  state='up',     axis='y',  adjustment='-' },
+			{ key='s',  state='down',   axis='y',  adjustment='+' },
+			{ key='a',  state='left',   axis='x',  adjustment='-' },
+			{ key='d',  state='right',  axis='x',  adjustment='+' },
+		}
 		player.old_x = player.x
 		player.old_y = player.y
-		if keydown == 'w' then player.y = player.y - player.speed * dt end
-		if keydown == 's' then player.y = player.y + player.speed * dt end
-		if keydown == 'a' then player.x = player.x - player.speed * dt end
-		if keydown == 'd' then player.x = player.x + player.speed * dt end
-		player_states = { w = 'up', s = 'down', a = 'left', d = 'right' }
-		if player_states[keydown] then
-			player.state = player_states[keydown] or player.state
+		animation_state = nil
+		for _, row in ipairs(movement_table) do
+			if keydown == row.key then
+				loadstring('player.'..row.axis..'=player.'..row.axis..row.adjustment..'player.speed*'..dt)()
+				animation_state = row.state
+				break
+			end
+		end
+		if animation_state then
 			player.animating = true
+			player.state = animation_state
 		else
 			player.animating = false
 			player.frame = 1
 		end
 	end
 	-- Day night cycle
-	time.sunrise = {time = 6 * 60, duration = 2 * 60}
-	time.sunset = {time = 20 * 60, duration = 2 * 60}
-	day_color, night_color = {1, 1, 1, 0}, {.3, .3, .7, 0}
-	ambient_color = calculate_transition_color((time.minutes_today or 0), time.sunrise.time, time.sunrise.duration, night_color, day_color) or
-		calculate_transition_color((time.minutes_today or 0), time.sunset.time, time.sunset.duration, day_color, night_color) or
-		calculate_default_color((time.minutes_today or 0), time.sunrise.time, time.sunset.time, day_color, night_color)
+	ambient_color = ambient_colors[time.minutes_today] or ambient_color
 	-- Loop
 	for layer_index, layer in ipairs(objects) do for object_index, object in ipairs(layer) do
 		if state == 'game' then
+			-- Animation
+			if object.fps ~= 'none' then
+				animation_time_elapsed = (animation_time_elapsed or 0) + dt
+				while animation_time_elapsed > 1 / object.fps do
+					if object.animating then
+						object.frame = math.max(1, (object.frame + 1) % 9)
+					end
+					animation_time_elapsed = animation_time_elapsed - 1 / object.fps
+					object.sprite = graphics['sprites'..object.name..object.state][object.frame]
+				end
+			end
 			-- Collisions
 			player.collision = player.collision or function()
 				player.x = player.old_x
@@ -170,26 +164,10 @@ function overlapping(r1, r2)
 end
 
 function increment_time(bigger, smaller, max)
-	if time[smaller] >= max then
+	while time[smaller] >= max do
 		time[bigger] = time[bigger] + 1
 		time[smaller] = time[smaller] - max
 	end
-end
-
-function calculate_transition_color(minutes, transition, duration, start_color, target_color)
-	local result_color = {}
-	for i, _ in ipairs(target_color) do
-		local transition_progress = minutes - transition
-		if transition_progress < 0 then return nil end
-		if transition_progress > duration then return nil end
-		result_color[i] = start_color[i] + (target_color[i] - start_color[i]) * (transition_progress / duration)
-	end
-	return result_color
-end
-
-function calculate_default_color(minutes, sunrise, sunset, day_color, night_color)
-	if minutes > sunrise and minutes < sunset then return day_color end
-	return night_color
 end
 
 function clear_canvas(canvas, color)
@@ -197,4 +175,20 @@ function clear_canvas(canvas, color)
 	love.graphics.setCanvas(canvas)
 	love.graphics.setColor(color)
 	love.graphics.rectangle('fill', 0, 0, width, height)
+end
+
+function load_file(path)
+	local file = io.open(path, 'r')
+	io.input(file)
+	local contents = loadstring(io.read('*all'))()
+	io.close(file)
+	return contents
+end
+
+function save_file(data, path)
+	local file = io.open(path, 'w')
+	local serpent = require 'libraries.serpent'
+	io.output(file)
+	io.write(serpent.block(data, {name='data'}))
+	io.close(file)
 end
