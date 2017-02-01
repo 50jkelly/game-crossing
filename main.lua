@@ -1,5 +1,7 @@
 function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
+	-- Events
+	signal = require 'libraries.hump.signal'
 	-- Game state
 	state = 'game'
 	-- In game time
@@ -29,6 +31,13 @@ function love.load()
 	ambient_colors = load_file('data/ambient_colors.lua')
 	-- Shaders
 	light_shader = love.graphics.newShader(load_file('data/light_shader.lua'))
+	-- Helpers
+	helpers = {}
+	helpers.player = require 'helpers.player'
+	helpers.player.initialise(player, signal)
+	-- Keyboard
+	keyboard = (require 'state_machines.keyboard').new({}, signal)
+	controls = load_file('data/movement.lua')
 end
 
 function love.update(dt)
@@ -51,29 +60,7 @@ function love.update(dt)
 		viewport.x = (player.x + player.width / 2) - viewport.width / 2
 		viewport.y = (player.y + player.height / 2) - viewport.height / 2
 		-- Movement
-		movement_table = {
-			{ key='w',  state='up',     axis='y',  adjustment='-' },
-			{ key='s',  state='down',   axis='y',  adjustment='+' },
-			{ key='a',  state='left',   axis='x',  adjustment='-' },
-			{ key='d',  state='right',  axis='x',  adjustment='+' },
-		}
-		player.old_x = player.x
-		player.old_y = player.y
-		animation_state = nil
-		for _, row in ipairs(movement_table) do
-			if keydown == row.key then
-				loadstring('player.'..row.axis..'=player.'..row.axis..row.adjustment..'player.speed*'..dt)()
-				animation_state = row.state
-				break
-			end
-		end
-		if animation_state then
-			player.animating = true
-			player.state = animation_state
-		else
-			player.animating = false
-			player.frame = 1
-		end
+		signal.emit('checkkeys', { controls = controls, dt = dt })
 	end
 	-- Day night cycle
 	ambient_color = ambient_colors[time.minutes_today] or ambient_color
@@ -84,6 +71,7 @@ function love.update(dt)
 			if object.fps ~= 'none' then
 				animation_time_elapsed = (animation_time_elapsed or 0) + dt
 				while animation_time_elapsed > 1 / object.fps do
+					object.frame = object.frame or 1
 					if object.animating then
 						object.frame = math.max(1, (object.frame + 1) % 9)
 					end
@@ -92,15 +80,7 @@ function love.update(dt)
 				end
 			end
 			-- Collisions
-			player.collision = player.collision or function()
-				player.x = player.old_x
-				player.y = player.old_y
-			end
-			for li, l in ipairs(objects) do for oi, o in ipairs(l) do
-				if (li ~= layer_index or oi ~= object_index) and object.collides and o.collides and overlapping(object, o) and object.collision then
-					object.collision(o)
-				end
-			end end
+			helpers.player.collision(object, layer_index, object_index)
 		end
 		-- Select objects to draw
 		if object.scene == current_scene and overlapping(object, viewport) then
@@ -147,11 +127,11 @@ function love.draw()
 end
 
 function love.keypressed(key)
-	keydown = key
+	signal.emit('keypressed', {key = key})
 end
 
 function love.keyreleased(key)
-	if keydown == key then keydown = nil end
+	signal.emit('keyreleased', {key = key})
 end
 
 function love.resize(width, height)
