@@ -1,19 +1,27 @@
 function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 	-- Events
-	player_signal = require 'libraries.hump.signal'
+	signal = require 'libraries.hump.signal'
+
+	-- Controls
+	controls = load_file('data/movement.lua')
+
 	-- Game state
-	state = 'game'
+	game_state_machine = (require 'state_machines.game').new(controls, signal)
+
 	-- Delta time
 	dt = nil
+
 	-- In game time
 	time = { years=0, months=0, days=0, hours=12, minutes=0, seconds=0, minutes_today=0 }
+
 	-- Graphics
 	graphics = {}
 	for _, row in ipairs(load_file('data/graphics.lua')) do
 		graphics[row.category..'_'..row.name] = graphics[row.category..'_'..row.name] or {}
 		graphics[row.category..'_'..row.name] = love.graphics.newImage(row.path)
 	end
+
 	-- Objects
 	objects, to_draw = {{}, {}, {}}, {{}, {}, {}}
 	colliders = {}
@@ -31,29 +39,48 @@ function love.load()
 		end
 	end
 	player = objects[2][1]
+
 	-- Viewport
 	love.resize(love.graphics.getWidth(), love.graphics.getHeight())
+
 	-- Scene
 	current_scene = 1
+
 	-- Day/night cycle
 	ambient_colors = load_file('data/ambient_colors.lua')
+
 	-- Shaders
 	light_shader = love.graphics.newShader(load_file('data/light_shader.lua'))
+
 	-- Keyboard
-	controls = load_file('data/movement.lua')
-	keyboard = (require 'state_machines.keyboard').new(nil, controls, player_signal)
+	keyboard_state_machines = {}
+	for key, _ in pairs(controls) do
+		keyboard_state_machines[key] = (require 'state_machines.key').new(key, signal)
+	end
+
 	-- Player
-	player_movement_state_machine = (require 'state_machines.movement').new(player, player_signal)
-	player_animation_state_machine = (require 'state_machines.animation').new(player, player_signal)
-	player_collision_state_machine = (require 'state_machines.collision').new(player, player_signal)
+	player_movement_state_machine = (require 'state_machines.movement').new(player, signal)
+	player_animation_state_machine = (require 'state_machines.animation').new(player, signal)
+	player_collision_state_machine = (require 'state_machines.collision').new(player, signal)
 end
 
 function love.update(_dt)
 	-- FPS
 	love.window.setTitle('FPS: '..love.timer.getFPS())
+
 	-- Delta time
 	dt = _dt
-	if state == 'game' then
+
+	-- Keyboard input
+	for key, machine in pairs(keyboard_state_machines) do
+		if machine.current == 'keydown' then
+			if controls[key][game_state_machine.current] and controls[key][game_state_machine.current].on == 'keydown' then
+				signal.emit(controls[key][game_state_machine.current].action, key)
+			end
+		end
+	end
+
+	if game_state_machine.current == 'game' then
 		-- In game time
 		time_elapsed = (time_elapsed or 0) + dt
 		while time_elapsed > 1 / 5000 do
@@ -69,33 +96,20 @@ function love.update(_dt)
 		-- Viewport
 		viewport.x = (player.x + player.width / 2) - viewport.width / 2
 		viewport.y = (player.y + player.height / 2) - viewport.height / 2
-		-- Movement
-		player_signal.emit('checkkey')
+		-- Collisions
+		signal.emit('checkcollision', {
+			objects = objects,
+			layer_index = 2,
+			object_index = 1,
+			dt = dt
+		})
 	end
+
 	-- Day night cycle
 	ambient_color = ambient_colors[time.minutes_today] or ambient_color
+
 	-- Loop
 	for layer_index, layer in ipairs(objects) do for object_index, object in ipairs(layer) do
-		if state == 'game' then
-			-- Animation
-			if object.fps ~= 'none' then
-				animation_time_elapsed = (animation_time_elapsed or 0) + dt
-				while animation_time_elapsed > 1 / object.fps do
-					object.frame = object.frame or 1
-					if object.animating then
-						object.frame = math.max(1, (object.frame + 1) % 9)
-					end
-					animation_time_elapsed = animation_time_elapsed - 1 / object.fps
-				end
-			end
-			-- Collisions
-			player_signal.emit('checkcollision', {
-				objects = objects,
-				layer_index = 2,
-				object_index = 1,
-				dt = dt
-			})
-		end
 		-- Select objects to draw
 		if object.scene == current_scene and overlapping(object, viewport) then
 			table.insert(to_draw[layer_index], object)
@@ -143,11 +157,11 @@ function love.draw()
 end
 
 function love.keypressed(key)
-	player_signal.emit('keypressed', {key = key})
+	signal.emit('keyboard_pressed', {key=key})
 end
 
 function love.keyreleased(key)
-	player_signal.emit('keyreleased', {key = key})
+	signal.emit('keyboard_released', {key=key})
 end
 
 function love.resize(width, height)
