@@ -1,40 +1,36 @@
 local machine = require 'state_machines.enhanced'
 
 return {
-	new = function(keys, signal)
+	new = function(key, controls, signal)
 		return machine.create({
 			initial = 'idle',
 			signal = signal,
 			events = {
-				{ name = 'keypressed',   from = 'idle',      to = 'adding' },
-				{ name = 'keyadded',     from = 'adding',    to = 'idle' },
-				{ name = 'keyreleased',  from = 'idle',      to = 'removing' },
-				{ name = 'keyremoved',   from = 'removing',  to = 'idle' },
-				{ name = 'checkkeys',    from = 'idle',      to = 'checking' },
-				{ name = 'keyschecked',  from = 'checking',  to = 'idle' },
+				{ name = 'keypressed',          from = 'idle',      to = 'adding' },
+				{ name = 'keypressresolved',    from = 'adding',    to = 'idle' },
+				{ name = 'keyreleased',         from = 'idle',      to = 'removing' },
+				{ name = 'keyreleaseresolved',  from = 'removing',  to = 'idle' },
+				{ name = 'checkkey',            from = 'idle',      to = 'checking' },
+				{ name = 'keychecked',          from = 'checking',  to = 'idle' },
 			},
 			callbacks = {
-				onadding = function(self, event, from, to, args)
-					table.insert(keys, args.key)
-					signal.emit('keyadded')
+				onkeypressed = function(self, event, from, to, args)
+					key = args.key
+					signal.emit('keypressresolved')
 				end,
-				onremoving = function(self, event, from, to, args)
-					for i, key in pairs(keys) do
-						if key == args.key then
-							table.remove(keys, i)
-							break
-						end
+				onkeyreleased = function(self, event, from, to, args)
+					if key == args.key then
+						key = nil
+						signal.emit('stop')
 					end
-					signal.emit('keyremoved')
+					signal.emit('keyreleaseresolved')
 				end,
 				onchecking = function(self, event, from, to, args)
-					for _, key in pairs(keys) do
-						if args.controls[key] then
-							signal.emit(args.controls[key], args)
-						end
+					if controls[key] then
+						signal.emit(controls[key])
 					end
-					signal.emit('keyschecked')
-				end
+					signal.emit('keychecked')
+				end,
 			}
 		})
 	end

@@ -19,36 +19,48 @@ this.new = function(object, signal)
 		callbacks = {
 			onup = function(self, event, from, to, args)
 				object.oldx, object.oldy = object.x, object.y
-				object.state = self.current
-				object.animating = true
-				object.y = object.y - object.speed * args.dt
+				object.y = object.y - object.speed * dt
+				signal.emit('nextupframe', args)
 			end,
 			ondown = function(self, event, from, to, args)
 				object.oldx, object.oldy = object.x, object.y
-				object.state = self.current
-				object.animating = true
-				object.y = object.y + object.speed * args.dt
+				object.y = object.y + object.speed * dt
+				signal.emit('nextdownframe', args)
 			end,
 			onleft = function(self, event, from, to, args)
 				object.oldx, object.oldy = object.x, object.y
-				object.state = self.current
-				object.animating = true
-				object.x = object.x - object.speed * args.dt
+				object.x = object.x - object.speed * dt
+				signal.emit('nextleftframe', args)
 			end,
 			onright = function(self, event, from, to, args)
 				object.oldx, object.oldy = object.x, object.y
-				object.state = self.current
-				object.animating = true
-				object.x = object.x + object.speed * args.dt
+				object.x = object.x + object.speed * dt
+				signal.emit('nextrightframe', args)
 			end,
 			onstop = function(self, event, from, to, args)
-				object.frame = 1
-				object.animating = false
+				if from == 'up' then signal.emit('firstupframe', args) end
+				if from == 'down' then signal.emit('firstdownframe', args) end
+				if from == 'left' then signal.emit('firstleftframe', args) end
+				if from == 'right' then signal.emit('firstrightframe', args) end
 			end,
 			oncollision = function(self, event, from, to, args)
-				object.frame = 1
-				object.animating = false
 				object.x, object.y = object.oldx, object.oldy
+				if from == 'up' then signal.emit('firstupframe', args) end
+				if from == 'down' then signal.emit('firstdownframe', args) end
+				if from == 'left' then signal.emit('firstleftframe', args) end
+				if from == 'right' then signal.emit('firstrightframe', args) end
+			end,
+			onleaveblocked_up = function(self, event, from, to)
+				signal.emit('resetcollision')
+			end,
+			onleaveblocked_down = function(self, event, from, to)
+				signal.emit('resetcollision')
+			end,
+			onleaveblocked_left = function(self, event, from, to)
+				signal.emit('resetcollision')
+			end,
+			onleaveblocked_right = function(self, event, from, to)
+				signal.emit('resetcollision')
 			end,
 		}})
 	end

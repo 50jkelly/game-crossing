@@ -1,26 +1,34 @@
 function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
 	-- Events
-	signal = require 'libraries.hump.signal'
+	player_signal = require 'libraries.hump.signal'
 	-- Game state
 	state = 'game'
+	-- Delta time
+	dt = nil
 	-- In game time
 	time = { years=0, months=0, days=0, hours=12, minutes=0, seconds=0, minutes_today=0 }
 	-- Graphics
 	graphics = {}
 	for _, row in ipairs(load_file('data/graphics.lua')) do
-		graphics[row.category..row.name..row.state] = graphics[row.category..row.name..row.state] or {}
-		graphics[row.category..row.name..row.state][row.frame] = love.graphics.newImage(row.path)
+		graphics[row.category..'_'..row.name] = graphics[row.category..'_'..row.name] or {}
+		graphics[row.category..'_'..row.name] = love.graphics.newImage(row.path)
 	end
 	-- Objects
 	objects, to_draw = {{}, {}, {}}, {{}, {}, {}}
+	colliders = {}
 	for _, row in ipairs(load_file('data/objects.lua')) do
 		local object = {}
 		for index, value in pairs(row) do object[index] = value end
-		object.light_map = graphics['light_maps'..row.light_map..row.light_map_state][1]
-		object.light_mask = graphics['light_masks'..row.light_mask..row.light_mask_state][1]
-		object.sprite = graphics['sprites'..row.name..row.state][1]
+		object.light_map = graphics['light_maps_'..row.light_map]
+		object.light_mask = graphics['light_masks_'..row.light_mask]
+		object.sprite = graphics['sprites_'..row.name..'_'..row.state..'_1']
 		table.insert(objects[row.layer], object)
+
+		if object.collides then
+			colliders[object.scene] = colliders[object.scene] or {}
+			table.insert(colliders[object.scene], object)
+		end
 	end
 	player = objects[2][1]
 	-- Viewport
@@ -31,18 +39,20 @@ function love.load()
 	ambient_colors = load_file('data/ambient_colors.lua')
 	-- Shaders
 	light_shader = love.graphics.newShader(load_file('data/light_shader.lua'))
-	-- Helpers
-	helpers = {}
-	helpers.player = require 'helpers.player'
-	helpers.player.initialise(player, signal)
 	-- Keyboard
-	keyboard = (require 'state_machines.keyboard').new({}, signal)
 	controls = load_file('data/movement.lua')
+	keyboard = (require 'state_machines.keyboard').new(nil, controls, player_signal)
+	-- Player
+	player_movement_state_machine = (require 'state_machines.movement').new(player, player_signal)
+	player_animation_state_machine = (require 'state_machines.animation').new(player, player_signal)
+	player_collision_state_machine = (require 'state_machines.collision').new(player, player_signal)
 end
 
-function love.update(dt)
+function love.update(_dt)
 	-- FPS
 	love.window.setTitle('FPS: '..love.timer.getFPS())
+	-- Delta time
+	dt = _dt
 	if state == 'game' then
 		-- In game time
 		time_elapsed = (time_elapsed or 0) + dt
@@ -60,7 +70,7 @@ function love.update(dt)
 		viewport.x = (player.x + player.width / 2) - viewport.width / 2
 		viewport.y = (player.y + player.height / 2) - viewport.height / 2
 		-- Movement
-		signal.emit('checkkeys', { controls = controls, dt = dt })
+		player_signal.emit('checkkey')
 	end
 	-- Day night cycle
 	ambient_color = ambient_colors[time.minutes_today] or ambient_color
@@ -76,11 +86,15 @@ function love.update(dt)
 						object.frame = math.max(1, (object.frame + 1) % 9)
 					end
 					animation_time_elapsed = animation_time_elapsed - 1 / object.fps
-					object.sprite = graphics['sprites'..object.name..object.state][object.frame]
 				end
 			end
 			-- Collisions
-			helpers.player.collision(object, layer_index, object_index)
+			player_signal.emit('checkcollision', {
+				objects = objects,
+				layer_index = 2,
+				object_index = 1,
+				dt = dt
+			})
 		end
 		-- Select objects to draw
 		if object.scene == current_scene and overlapping(object, viewport) then
@@ -101,7 +115,9 @@ function love.draw()
 		table.sort(layer, function(a, b) return a.y < b.y end)
 		for _, object in ipairs(layer) do
 			love.graphics.setCanvas(diffuse_canvas)
-			love.graphics.draw(object.sprite, object.x, object.y)
+			if object.sprite then
+				love.graphics.draw(object.sprite, object.x, object.y)
+			end
 			if object.light_map then
 				love.graphics.setCanvas(light_map)
 				local light_width, light_height = object.light_map:getDimensions()
@@ -127,11 +143,11 @@ function love.draw()
 end
 
 function love.keypressed(key)
-	signal.emit('keypressed', {key = key})
+	player_signal.emit('keypressed', {key = key})
 end
 
 function love.keyreleased(key)
-	signal.emit('keyreleased', {key = key})
+	player_signal.emit('keyreleased', {key = key})
 end
 
 function love.resize(width, height)
