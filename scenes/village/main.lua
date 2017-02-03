@@ -9,11 +9,12 @@ local player
 
 this.initialise = function(_managers)
 	managers = _managers
+	world = bump.newWorld()
 	player = managers.objects.objects.player(10, 10)
 
 	foreground = {
 		player,
-		managers.objects.objects.plants.flower_1(30, 20),
+		managers.objects.objects.plants.flower_1(world, 30, 20),
 	}
 
 	background = {
@@ -21,7 +22,7 @@ this.initialise = function(_managers)
 	}
 
 	ui = {
-		managers.objects.objects.ui.cursor_1(),
+		managers.objects.objects.ui.cursor_1(world),
 	}
 
 	initialise_all(foreground)
@@ -32,7 +33,7 @@ this.update = function(dt)
 	managers.time.update(dt)
 	managers.viewport.update(this, player)
 	update_all(foreground, dt)
-	update_all(ui, dt)
+	update_all(ui, foreground)
 end
 
 this.draw = function()
@@ -45,8 +46,10 @@ this.draw = function()
 
 	draw_all(background)
 	draw_all(foreground)
-	draw_all(ui)
+
 	love.graphics.pop()
+
+	draw_all(ui)
 end
 
 return this

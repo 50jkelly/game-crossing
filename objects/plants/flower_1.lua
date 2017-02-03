@@ -1,7 +1,6 @@
 return {
-	new = function(_managers, x, y)
+	new = function(managers, world, x, y)
 		local flower = {}
-		managers = _managers
 
 		-- Basic
 
@@ -16,6 +15,10 @@ return {
 		flower.seconds_to_grow = 5
 		flower.grown = false
 
+		-- Collectable
+
+		flower.collectable = false
+
 		-- Graphics
 
 		flower.sprite = managers.graphics.graphics.plants.flower_1_start
@@ -23,6 +26,7 @@ return {
 		-- Initialisation
 
 		flower.initialise = function()
+			world:add(flower, flower.x, flower.y, flower.width, flower.height)
 			flower.time_created = tablex.copy(managers.time.time)
 		end
 
@@ -30,11 +34,25 @@ return {
 
 		flower.update = function()
 			if not flower.grown and managers.time.to_seconds() - managers.time.to_seconds(flower.time_created) > flower.seconds_to_grow then
+
+				-- New dimensions
+
 				local new_height = 36
 				flower.sprite = managers.graphics.graphics.plants.flower_1
 				flower.y = flower.y - (new_height - flower.height)
 				flower.height = new_height
+
+				-- New collision properties
+
+				world:update(flower, flower.x, flower.y, flower.width, flower.height)
+
+				-- New growth properties
+
 				flower.grown = true
+
+				-- New collectable properties
+
+				flower.collectable = true
 			end
 		end
 

@@ -3,10 +3,11 @@
 tablex = require 'pl.tablex'
 utils = require 'pl.utils'
 signal = require 'libraries.hump.signal'
+bump = require 'libraries.bump'
 utils.import 'pl.func'
 
 initialise_all = bind(tablex.foreach, _1, function(e) e.initialise() end)
-update_all = bind(tablex.foreach, _1, function(e, _, dt) e.update(dt) end, _2)
+update_all = bind(tablex.foreach, _1, function(e, _, _2) e.update(_2) end, _2)
 draw_all = bind(tablex.foreach, _1, function(e) love.graphics.draw(e.sprite, e.x, e.y) end)
 
 -- Locals

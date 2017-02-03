@@ -62,6 +62,7 @@ this.load = function()
 		},
 		ui = {
 			cursor_1 = love.graphics.newImage('graphics/ui/cursor_1.png'),
+			cursor_2 = love.graphics.newImage('graphics/ui/cursor_2.png'),
 		},
 	}
 end
