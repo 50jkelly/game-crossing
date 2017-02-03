@@ -61,7 +61,7 @@ this.load = function()
 			tree_1_top = love.graphics.newImage('graphics/trees/tree_1_top.png'),
 		},
 		ui = {
-			cursor = love.graphics.newImage('graphics/ui/cursor.png'),
+			cursor_1 = love.graphics.newImage('graphics/ui/cursor_1.png'),
 		},
 	}
 end

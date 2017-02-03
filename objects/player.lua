@@ -33,9 +33,10 @@ return {
 		}
 		player.current_direction = 'idle'
 
-		-- Keyboard input
-
 		player.initialise = function()
+
+			-- Keyboard input
+
 			signal.register('keypressed', function(key)
 				if player.directions[key] then 
 					if key ~= player.current_direction then
@@ -52,6 +53,18 @@ return {
 					player.animation_status = 'reset'
 				end
 			end)
+
+			-- Mouse input
+
+			signal.register('mousepressed', function(button, x, y)
+				if button == 'left' then
+					print(x, y)
+				end
+				if button == 'right' then
+					print('hello')
+				end
+			end)
+
 		end
 
 		-- Update
