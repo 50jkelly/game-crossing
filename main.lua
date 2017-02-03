@@ -31,7 +31,6 @@ function love.load()
 	managers.viewport.initialise()
 	managers.animations.initialise(managers)
 	managers.objects.initialise(managers)
-	managers.mouse.initialise(managers)
 	managers.scenes.initialise(managers)
 end
 
@@ -46,5 +45,4 @@ end
 
 function love.draw()
 	managers.scenes.draw()
-	managers.mouse.draw()
 end

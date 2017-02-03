@@ -20,13 +20,19 @@ this.initialise = function(_managers)
 		managers.objects.objects.plants.grass(0, 0),
 	}
 
+	ui = {
+		managers.objects.objects.ui.cursor_1(),
+	}
+
 	initialise_all(foreground)
+	initialise_all(ui)
 end
 
 this.update = function(dt)
 	managers.time.update(dt)
 	managers.viewport.update(this, player)
 	update_all(foreground, dt)
+	update_all(ui, dt)
 end
 
 this.draw = function()
@@ -39,6 +45,7 @@ this.draw = function()
 
 	draw_all(background)
 	draw_all(foreground)
+	draw_all(ui)
 	love.graphics.pop()
 end
 
