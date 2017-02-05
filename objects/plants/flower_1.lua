@@ -18,7 +18,7 @@ return {
 		-- Collectable
 
 		flower.collectable = false
-		flower.action_timer = 2
+		flower.action_timer = 0.5
 
 		-- Graphics
 

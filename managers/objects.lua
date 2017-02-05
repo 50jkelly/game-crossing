@@ -4,6 +4,7 @@ local player_object = require 'objects.player'
 local grass_object = require 'objects.plants.grass'
 local flower_1_object = require 'objects.plants.flower_1'
 local cursor_1_object = require 'objects.ui.cursor_1'
+local progress_bar_object = require 'objects.ui.progress_bar'
 
 this.initialise = function(managers)
 	this.objects = {
@@ -14,6 +15,7 @@ this.initialise = function(managers)
 		},
 		ui = {
 			cursor_1 = function(world) return cursor_1_object.new(managers, world) end,
+			progress_bar = function(x, y) return progress_bar_object.new(managers, x, y) end,
 		},
 	}
 end

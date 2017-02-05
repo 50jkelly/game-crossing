@@ -16,7 +16,7 @@ this.initialise = function(_managers)
 
 	foreground = {
 		player,
-		managers.objects.objects.plants.flower_1(world, 30, 20),
+		managers.objects.objects.plants.flower_1(world, 50, 50),
 	}
 
 	background = {
@@ -25,6 +25,7 @@ this.initialise = function(_managers)
 
 	ui = {
 		managers.objects.objects.ui.cursor_1(world),
+		managers.objects.objects.ui.progress_bar(0, 0),
 	}
 
 	initialise_all(foreground)

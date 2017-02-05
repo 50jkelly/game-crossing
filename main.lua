@@ -8,7 +8,11 @@ utils.import 'pl.func'
 
 initialise_all = bind(tablex.foreach, _1, function(e) e.initialise() end)
 update_all = bind(tablex.foreach, _1, function(e, _, _2) e.update(_2) end, _2)
-draw_all = bind(tablex.foreach, _1, function(e) love.graphics.draw(e.sprite, e.x, e.y) end)
+draw_all = bind(tablex.foreach, _1, function(e)
+	if not e.hidden then
+		love.graphics.draw(e.sprite, e.x, e.y)
+	end
+end)
 
 -- Locals
 

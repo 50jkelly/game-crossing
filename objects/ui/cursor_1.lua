@@ -25,6 +25,7 @@ return {
 			local objects, dt = unpack(args)
 
 			-- Position
+
 			cursor.x = love.mouse.getX()
 			cursor.y = love.mouse.getY()
 
@@ -53,13 +54,16 @@ return {
 			if managers.mouse.mousedown == 'left' then
 				if is_in_range and collectable then
 					collectable.current_action_timer = (collectable.current_action_timer or collectable.action_timer) - dt
+					signal.emit('start_progress_bar', collectable)
 					if collectable.current_action_timer <= 0 then
 						collectable.remove()
+						signal.emit('stop_progress_bar')
 					end
 				end
 			else
 				if collectable then
 					collectable.current_action_timer = nil
+					signal.emit('stop_progress_bar')
 				end
 			end
 			

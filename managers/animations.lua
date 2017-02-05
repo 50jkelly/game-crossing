@@ -71,7 +71,22 @@ this.initialise = function(managers)
 					},
 				}
 			end,
-		}
+		},
+		progress_bar = function()
+			return {
+				current_frame = 1,
+				frames = {
+					managers.graphics.graphics.ui.progress_bar.progress_bar_1,
+					managers.graphics.graphics.ui.progress_bar.progress_bar_2,
+					managers.graphics.graphics.ui.progress_bar.progress_bar_3,
+					managers.graphics.graphics.ui.progress_bar.progress_bar_4,
+					managers.graphics.graphics.ui.progress_bar.progress_bar_5,
+					managers.graphics.graphics.ui.progress_bar.progress_bar_6,
+					managers.graphics.graphics.ui.progress_bar.progress_bar_7,
+					managers.graphics.graphics.ui.progress_bar.progress_bar_8,
+				},
+			}
+		end,
 	}
 end
 

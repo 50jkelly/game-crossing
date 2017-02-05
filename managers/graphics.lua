@@ -63,6 +63,17 @@ this.load = function()
 		ui = {
 			cursor_1 = love.graphics.newImage('graphics/ui/cursor_1.png'),
 			cursor_2 = love.graphics.newImage('graphics/ui/cursor_2.png'),
+			progress_bar = {
+				progress_bar_1 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_1.png'),
+				progress_bar_2 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_2.png'),
+				progress_bar_3 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_3.png'),
+				progress_bar_4 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_4.png'),
+				progress_bar_5 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_5.png'),
+				progress_bar_6 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_6.png'),
+				progress_bar_7 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_7.png'),
+				progress_bar_8 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_8.png'),
+				progress_bar_9 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_9.png'),
+			},
 		},
 	}
 end
