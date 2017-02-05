@@ -6,6 +6,7 @@ local managers
 local background
 local foreground
 local player
+local inventory
 
 -- Initialisation
 
@@ -13,6 +14,7 @@ this.initialise = function(_managers)
 	managers = _managers
 	world = bump.newWorld()
 	player = managers.objects.objects.player(10, 10)
+	inventory = managers.objects.objects.ui.inventory()
 
 	foreground = {
 		player,
@@ -25,7 +27,7 @@ this.initialise = function(_managers)
 
 	ui = {
 		managers.objects.objects.ui.progress_bar(0, 0),
-		managers.objects.objects.ui.inventory(),
+		inventory,
 		managers.objects.objects.ui.cursor_1(world),
 	}
 
@@ -37,7 +39,8 @@ this.initialise = function(_managers)
 	signal.register('remove_object', function(object)
 		table.remove(foreground, tablex.find(foreground, object))
 	end)
-end
+
+	inventory.add(managers.items.items.stack(1, managers.graphics.graphics.items.seed)) end
 
 -- Update
 

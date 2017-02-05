@@ -15,6 +15,9 @@ update_all = bind(tablex.foreach, _1, function(e, _, _2) e.update(_2) end, _2)
 draw_all = bind(tablex.foreach, _1, function(e)
 	if not e.hidden then
 		love.graphics.draw(e.sprite, e.x, e.y)
+		if e.draw then
+			e.draw()
+		end
 	end
 end)
 
@@ -29,7 +32,7 @@ local managers = {
 	mouse = require 'managers.mouse',
 	viewport = require 'managers.viewport',
 	time = require 'managers.time',
-	inventory = require 'managers.inventory',
+	items = require 'managers.items',
 }
 
 -- Load
@@ -41,8 +44,8 @@ function love.load()
 	managers.viewport.initialise()
 	managers.animations.initialise(managers)
 	managers.objects.initialise(managers)
+	managers.items.initialise(managers)
 	managers.scenes.initialise(managers)
-	managers.inventory.initialise(managers)
 end
 
 -- Update
