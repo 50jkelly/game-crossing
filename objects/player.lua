@@ -1,3 +1,9 @@
+local get_player_range = function(player)
+	x = player.x + player.width / 2 - player.range / 2
+	y = player.y + player.height / 2 - player.range / 2
+	return x, y
+end
+
 return {
 	new = function(managers, x, y)
 		local player = {}
@@ -9,6 +15,11 @@ return {
 		player.speed = 100
 		player.width = 20
 		player.height = 26
+
+		-- Interaction range
+
+		player.range = 100
+		player.range_object = { player_range = true }
 
 		-- Animation
 
@@ -32,6 +43,8 @@ return {
 			idle = function() end,
 		}
 		player.current_direction = 'idle'
+
+		-- Initialisation
 
 		player.initialise = function()
 
@@ -65,13 +78,29 @@ return {
 				end
 			end)
 
+			-- Interaction range
+
+			local player_range_x, player_range_y = get_player_range(player)
+			world:add(player.range_object, player_range_x, player_range_y, player.range, player.range)
+
 		end
 
 		-- Update
 
 		player.update = function(dt)
+
+			-- Position
+
 			player.directions[player.current_direction](dt)
+
+			-- Sprite
+
 			player.sprite = managers.animations[player.animation_status](player.current_animation, dt)
+
+			-- Interaction range
+
+			local player_range_x, player_range_y = get_player_range(player)
+			world:update(player.range_object, player_range_x, player_range_y, player.range, player.range)
 		end
 
 		return player
