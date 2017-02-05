@@ -18,6 +18,7 @@ return {
 		-- Collectable
 
 		flower.collectable = false
+		flower.action_timer = 2
 
 		-- Graphics
 
@@ -54,6 +55,13 @@ return {
 
 				flower.collectable = true
 			end
+		end
+
+		-- Removal
+
+		flower.remove = function()
+			signal.emit('remove_object', flower)
+			world:remove(flower)
 		end
 
 		return flower

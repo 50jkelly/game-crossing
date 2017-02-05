@@ -67,17 +67,6 @@ return {
 				end
 			end)
 
-			-- Mouse input
-
-			signal.register('mousepressed', function(button, x, y)
-				if button == 'left' then
-					print(x, y)
-				end
-				if button == 'right' then
-					print('hello')
-				end
-			end)
-
 			-- Interaction range
 
 			local player_range_x, player_range_y = get_player_range(player)

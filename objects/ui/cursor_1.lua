@@ -21,7 +21,10 @@ return {
 
 		-- Update
 
-		cursor.update = function(objects)
+		cursor.update = function(args)
+			local objects, dt = unpack(args)
+
+			-- Position
 			cursor.x = love.mouse.getX()
 			cursor.y = love.mouse.getY()
 
@@ -32,17 +35,32 @@ return {
 			local collisions = world:queryPoint(adjusted_x, adjusted_y)
 
 			local is_in_range
-			local is_over_collectable
+			local collectable
 			tablex.foreach(collisions, function(collision)
 				if collision.player_range then is_in_range = true end
-				if collision.collectable then is_over_collectable = true end
+				if collision.collectable then collectable = collision end
 			end)
 
-			-- Act on hover data
+			-- Hover behaviour
 
 			cursor.sprite = managers.graphics.graphics.ui.cursor_1
-			if is_in_range and is_over_collectable then
+			if is_in_range and collectable then
 				cursor.sprite = managers.graphics.graphics.ui.cursor_2
+			end
+
+			-- Mouse down behaviour
+
+			if managers.mouse.mousedown == 'left' then
+				if is_in_range and collectable then
+					collectable.current_action_timer = (collectable.current_action_timer or collectable.action_timer) - dt
+					if collectable.current_action_timer <= 0 then
+						collectable.remove()
+					end
+				end
+			else
+				if collectable then
+					collectable.current_action_timer = nil
+				end
 			end
 			
 		end

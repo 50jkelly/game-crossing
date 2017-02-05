@@ -7,6 +7,8 @@ local background
 local foreground
 local player
 
+-- Initialisation
+
 this.initialise = function(_managers)
 	managers = _managers
 	world = bump.newWorld()
@@ -27,14 +29,24 @@ this.initialise = function(_managers)
 
 	initialise_all(foreground)
 	initialise_all(ui)
+
+	-- Removal
+
+	signal.register('remove_object', function(object)
+		table.remove(foreground, tablex.find(foreground, object))
+	end)
 end
+
+-- Update
 
 this.update = function(dt)
 	managers.time.update(dt)
 	managers.viewport.update(this, player)
 	update_all(foreground, dt)
-	update_all(ui, foreground)
+	update_all(ui, { foreground, dt })
 end
+
+-- Drawing
 
 this.draw = function()
 	love.graphics.push()
