@@ -24,8 +24,9 @@ this.initialise = function(_managers)
 	}
 
 	ui = {
-		managers.objects.objects.ui.cursor_1(world),
 		managers.objects.objects.ui.progress_bar(0, 0),
+		managers.objects.objects.ui.inventory(),
+		managers.objects.objects.ui.cursor_1(world),
 	}
 
 	initialise_all(foreground)

@@ -6,8 +6,12 @@ signal = require 'libraries.hump.signal'
 bump = require 'libraries.bump'
 utils.import 'pl.func'
 
+-- Convenience functions
+
 initialise_all = bind(tablex.foreach, _1, function(e) e.initialise() end)
+
 update_all = bind(tablex.foreach, _1, function(e, _, _2) e.update(_2) end, _2)
+
 draw_all = bind(tablex.foreach, _1, function(e)
 	if not e.hidden then
 		love.graphics.draw(e.sprite, e.x, e.y)
@@ -25,6 +29,7 @@ local managers = {
 	mouse = require 'managers.mouse',
 	viewport = require 'managers.viewport',
 	time = require 'managers.time',
+	inventory = require 'managers.inventory',
 }
 
 -- Load
@@ -37,6 +42,7 @@ function love.load()
 	managers.animations.initialise(managers)
 	managers.objects.initialise(managers)
 	managers.scenes.initialise(managers)
+	managers.inventory.initialise(managers)
 end
 
 -- Update

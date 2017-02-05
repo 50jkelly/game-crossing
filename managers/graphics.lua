@@ -74,6 +74,9 @@ this.load = function()
 				progress_bar_8 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_8.png'),
 				progress_bar_9 = love.graphics.newImage('graphics/ui/progress_bar/progress_bar_9.png'),
 			},
+			inventory = {
+				inventory_20 = love.graphics.newImage('graphics/ui/inventory/inventory_20.png'),
+			}
 		},
 	}
 end

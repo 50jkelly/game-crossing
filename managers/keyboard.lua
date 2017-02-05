@@ -6,6 +6,7 @@ this.controls = {
 	a = 'left',
 	d = 'right',
 	p = 'pause',
+	i = 'inventory',
 }
 
 love.keypressed = function(key)
