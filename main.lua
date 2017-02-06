@@ -6,6 +6,7 @@ signal = require 'libraries.hump.signal'
 bump = require 'libraries.bump'
 utils.import 'pl.func'
 
+tooltip_library = (require 'libraries.tooltip')
 inventory = (require 'objects.ui.inventory')()
 
 -- Convenience functions
@@ -41,6 +42,7 @@ local managers = {
 
 function love.load()
 	love.graphics.setDefaultFilter('nearest', 'nearest', 1)
+	font = love.graphics.newFont('fonts/Mufferaw.otf', 14)
 	managers.graphics.load()
 
 	managers.viewport.initialise()
@@ -62,7 +64,6 @@ end
 -- Draw
 
 function love.draw()
-	local font = love.graphics.newFont('fonts/Mufferaw.otf', 14)
 	love.graphics.setFont(font)
 	managers.scenes.draw()
 end

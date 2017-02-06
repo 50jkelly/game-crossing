@@ -8,6 +8,7 @@ local foreground
 local player
 local progress_bar
 local cursor
+local tooltip
 
 -- Initialisation
 
@@ -26,6 +27,7 @@ this.initialise = function(_managers)
 	}
 
 	progress_bar = managers.objects.objects.ui.progress_bar(0, 0)
+	tooltip = tooltip_library.new()
 	cursor = managers.objects.objects.ui.cursor_1(world)
 
 	initialise_all(foreground)
@@ -92,6 +94,7 @@ this.update = function(dt)
 	managers.viewport.update(this, player)
 	update_all(foreground, dt)
 
+	tooltip.update(dt)
 	cursor.update({foregorund, dt})
 end
 
@@ -112,6 +115,7 @@ this.draw = function()
 
 	progress_bar.draw()
 	inventory.draw()
+	tooltip.draw()
 	cursor.draw()
 end
 

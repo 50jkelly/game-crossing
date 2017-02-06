@@ -13,10 +13,20 @@ return {
 
 		cursor.sprite = managers.graphics.graphics.ui.cursor_1
 
+		-- Tooltip
+
+		local tooltip = tooltip_library.new()
+
 		-- Initialisation
 
 		cursor.initialise = function()
 			love.mouse.setVisible(false)
+
+			tooltip.initialise({
+				background_color = {250,242,225,255},
+				border_color = {183,145,106,255},
+				text_color = {183,145,106,255},
+			})
 		end
 
 		-- Update
@@ -36,9 +46,11 @@ return {
 			local collisions = world:queryPoint(adjusted_x, adjusted_y)
 
 			local is_in_range
+			local name
 			local collectable
 			tablex.foreach(collisions, function(collision)
 				if collision.player_range then is_in_range = true end
+				if collision.name then name = collision.name end
 				if collision.collectable then collectable = collision end
 			end)
 
@@ -47,6 +59,12 @@ return {
 			cursor.sprite = managers.graphics.graphics.ui.cursor_1
 			if is_in_range and collectable then
 				cursor.sprite = managers.graphics.graphics.ui.cursor_2
+			end
+
+			if name then
+				tooltip.show(cursor.x, cursor.y - 30, name)
+			else
+				tooltip.hide()
 			end
 
 			-- Mouse down behaviour
@@ -66,6 +84,10 @@ return {
 					signal.emit('stop_progress_bar')
 				end
 			end
+
+			-- Tooltip
+
+			tooltip.update(dt)
 			
 		end
 
@@ -73,6 +95,7 @@ return {
 
 		cursor.draw = function()
 			love.graphics.draw(cursor.sprite, cursor.x, cursor.y)
+			tooltip.draw()
 		end
 
 		return cursor

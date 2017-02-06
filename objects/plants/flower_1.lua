@@ -4,6 +4,7 @@ return {
 
 		-- Basic
 
+		flower.name = 'Flower'
 		flower.x = x
 		flower.y = y
 		flower.width = 25
