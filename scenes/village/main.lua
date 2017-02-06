@@ -6,7 +6,8 @@ local managers
 local background
 local foreground
 local player
-local inventory
+local progress_bar
+local cursor
 
 -- Initialisation
 
@@ -14,7 +15,6 @@ this.initialise = function(_managers)
 	managers = _managers
 	world = bump.newWorld()
 	player = managers.objects.objects.player(10, 10)
-	inventory = managers.objects.objects.ui.inventory()
 
 	foreground = {
 		player,
@@ -25,14 +25,13 @@ this.initialise = function(_managers)
 		managers.objects.objects.plants.grass(0, 0),
 	}
 
-	ui = {
-		managers.objects.objects.ui.progress_bar(0, 0),
-		inventory,
-		managers.objects.objects.ui.cursor_1(world),
-	}
+	progress_bar = managers.objects.objects.ui.progress_bar(0, 0)
+	cursor = managers.objects.objects.ui.cursor_1(world)
 
 	initialise_all(foreground)
-	initialise_all(ui)
+
+	progress_bar.initialise()
+	cursor.initialise()
 
 	-- Removal
 
@@ -40,7 +39,51 @@ this.initialise = function(_managers)
 		table.remove(foreground, tablex.find(foreground, object))
 	end)
 
-	inventory.add(managers.items.items.stack(1, managers.graphics.graphics.items.seed)) end
+	-- Inventory
+
+	signal.register('keypressed', function(key)
+		if key == 'inventory' then
+			inventory.toggle()
+		end
+	end)
+
+	inventory.add_item({
+		name = 'Seeds',
+		sprite = managers.graphics.graphics.items.seed,
+		amount = 1,
+		stack_size = 2
+	}, 2, 1)
+	inventory.add_item({
+		name = 'Seeds',
+		sprite = managers.graphics.graphics.items.seed,
+		amount = 1,
+		stack_size = 2
+	}, 2, 1)
+	inventory.add_item({
+		name = 'Books',
+		sprite = managers.graphics.graphics.items.book,
+		amount = 1,
+	})
+	inventory.add_item({
+		name = 'Seeds',
+		sprite = managers.graphics.graphics.items.seed,
+		amount = 1,
+		stack_size = 2
+	})
+	inventory.add_item({
+		name = 'Seeds',
+		sprite = managers.graphics.graphics.items.seed,
+		amount = 1,
+		stack_size = 2
+	})
+	inventory.add_item({
+		name = 'Seeds',
+		sprite = managers.graphics.graphics.items.seed,
+		amount = 1,
+		stack_size = 2
+	})
+
+end
 
 -- Update
 
@@ -48,7 +91,8 @@ this.update = function(dt)
 	managers.time.update(dt)
 	managers.viewport.update(this, player)
 	update_all(foreground, dt)
-	update_all(ui, { foreground, dt })
+
+	cursor.update({foregorund, dt})
 end
 
 -- Drawing
@@ -66,7 +110,9 @@ this.draw = function()
 
 	love.graphics.pop()
 
-	draw_all(ui)
+	progress_bar.draw()
+	inventory.draw()
+	cursor.draw()
 end
 
 return this

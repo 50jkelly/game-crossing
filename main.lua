@@ -6,6 +6,8 @@ signal = require 'libraries.hump.signal'
 bump = require 'libraries.bump'
 utils.import 'pl.func'
 
+inventory = (require 'objects.ui.inventory')()
+
 -- Convenience functions
 
 initialise_all = bind(tablex.foreach, _1, function(e) e.initialise() end)
@@ -46,6 +48,8 @@ function love.load()
 	managers.objects.initialise(managers)
 	managers.items.initialise(managers)
 	managers.scenes.initialise(managers)
+
+	inventory.initialise(managers.graphics.graphics.ui.inventory.inventory_20)
 end
 
 -- Update
@@ -58,5 +62,7 @@ end
 -- Draw
 
 function love.draw()
+	local font = love.graphics.newFont('fonts/Mufferaw.otf', 14)
+	love.graphics.setFont(font)
 	managers.scenes.draw()
 end

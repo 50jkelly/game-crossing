@@ -35,9 +35,12 @@ return {
 
 		end
 
-		-- Update
+		-- Draw
 
-		progress_bar.update = function()
+		progress_bar.draw = function()
+			if not progress_bar.hidden then
+				love.graphics.draw(progress_bar.sprite, progress_bar.x, progress_bar.y)
+			end
 		end
 
 		return progress_bar
