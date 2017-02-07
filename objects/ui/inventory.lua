@@ -32,8 +32,6 @@ return function()
 		slot_margin_y = _slot_margin_y or 10
 		text_color = _text_color or {0,0,0,255}
 		width, height = sprite:getDimensions()
-		x = (love.graphics.getWidth() - width) / 2
-		y = (love.graphics.getHeight() - height) / 2
 		hidden = true
 	end
 
@@ -41,6 +39,8 @@ return function()
 
 	this.draw = function()
 		if not hidden then
+			x = (love.graphics.getWidth() - width) / 2
+			y = (love.graphics.getHeight() - height) / 2
 			love.graphics.draw(sprite, x, y)
 
 			for row, column, slot in array2d.iter(slots, true) do
