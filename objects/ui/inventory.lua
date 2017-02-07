@@ -4,6 +4,7 @@ return function()
 	-- Dependencies
 
 	local array2d = array2d or require 'pl.array2d'
+	local tablex = tablex or require 'pl.tablex'
 
 	-- Constants
 
@@ -66,49 +67,68 @@ return function()
 
 	this.add_item = function(item, row, column)
 
-		-- Can stack
+		-- Find next row or column
 
-		local can_stack = function(slot, item)
-			return
-				slot.stack_size and
-				item.stack_size and
-				slot.stack_size >= slot.amount + item.amount
+		local next = function(row, column)
+			if slots[row][column + 1] then return row, column + 1 end
+			if slots[row + 1][1] then return row + 1, column end
+			return nil
 		end
 
-		-- Add item
+		-- Main function
 
-		local add_item = function(row, column, item)
-			if slots[row][column] == EMPTY then
-				slots[row][column] = item
+		local function add_item(items, row, column)
+
+			-- Base case 1: Items is empty
+
+			if #items == 0 then
 				return true
-			elseif slots[row][column].name == item.name then
-				if can_stack(slots[row][column], item) then
-					slots[row][column].amount = slots[row][column].amount + item.amount
-					return true
-				end
+
+			-- Base case 2: Inventory is full
+
+			elseif not (row and column) then
+				items[1].amount = #items
+				return items[1] -- Return leftover items
+			
+			-- Case 1: Slot is empty
+
+			elseif slots[row][column] == EMPTY then
+				slots[row][column] = items[1]
+				add_item(tablex.sub(items, 2), row, column)
+
+			-- Case 2: Slot does not contain a matching item
+
+			elseif slots[row][column].name ~= items[1].name then
+				row, column = next(row, column)
+				add_item(items, row, column)
+
+			-- Case 3: Slot is full
+
+			elseif slots[row][column].amount == slots[row][column].stack_size then
+				row, column = next(row, column)
+				add_item(items, row, column)
+
+			-- Case 4: Slot is occupied but has room in stack
+
+			else
+				slots[row][column].amount = slots[row][column].amount + 1
+				add_item(tablex.sub(items, 2), row, column)
 			end
-			return nil
 		end
 
-		-- Function body
+		-- Normalise item
 
-		if row and column then
-			return add_item(row, column, item)
-		else
-			local slot_information = this.find(item.name)
-			if slot_information then
-				local row, column, slot = unpack(slot_information)
-				if add_item(row, column, item) then
-					return true
-				end
-			end
-			slot_information = this.find_empty()
-			if slot_information then
-				local row, column, slot = unpack(slot_information)
-				return add_item(row, column, item)
-			end
-			return nil
+		local items = {}
+
+		for i=1, item.amount, 1 do
+			local _item = tablex.copy(item)
+			_item.amount = 1
+			table.insert(items, _item)
 		end
+
+		row = row or 1
+		column = column or 1
+		add_item(items, row, column)
 
 	end
 
