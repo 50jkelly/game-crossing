@@ -53,7 +53,8 @@ function love.load()
 
 	inventory.initialise(
 		managers.graphics.graphics.ui.inventory.inventory_20,
-		managers.graphics.graphics.ui.inventory.inventory_slot_highlight)
+		managers.graphics.graphics.ui.inventory.inventory_slot_highlight,
+		managers.graphics.graphics.ui.inventory.trash)
 end
 
 -- Update
