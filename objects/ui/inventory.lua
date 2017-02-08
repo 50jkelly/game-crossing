@@ -22,6 +22,11 @@ return function()
 	local width, height, x, y, slot_width, slot_height, main_margin_x, main_margin_y, slot_margin_x, slot_margin_y
 	local sprite, slot_highlight_sprite, hidden, text_color
 
+	-- Drag and drop
+	local dragged,
+		dragged_row, dragged_column,
+		grabbed_x, grabbed_y
+
 	-- Slot position
 
 	local function slot_position(row, column)
@@ -55,6 +60,9 @@ return function()
 			x = (love.graphics.getWidth() - width) / 2
 			y = (love.graphics.getHeight() - height) / 2
 
+			-- Reset
+			highlighted_slot = nil
+
 			-- Mouse hover
 			for row, column, slot in array2d.iter(slots, true) do
 				local slot_x, slot_y = slot_position(row, column)
@@ -69,10 +77,24 @@ return function()
 
 				if mouse_over_slot then
 					highlighted_slot = { row, column }
-					break
-				else
-					highlighted_slot = nil
 				end
+			end
+
+			-- Drag
+			if love.mouse.isDown(1) and highlighted_slot and not dragged then
+				dragged_row, dragged_column = unpack(highlighted_slot)
+				dragged = slots[dragged_row][dragged_column]
+
+				local x, y = slot_position(dragged_row, dragged_column)
+				grabbed_x = love.mouse.getX() - x
+				grabbed_y = love.mouse.getY() - y
+
+				slots[dragged_row][dragged_column] = EMPTY
+			end
+
+			-- Drop
+			if not(love.mouse.isDown(1)) and dragged then
+				dragged = nil
 			end
 		end
 	end
@@ -101,6 +123,16 @@ return function()
 				local x, y = slot_position(row, column)
 				love.graphics.draw(slot_highlight_sprite, x, y)
 			end
+
+			-- Drag and drop
+			if dragged then
+				local x = love.mouse.getX() - grabbed_x
+				local y = love.mouse.getY() - grabbed_y
+				love.graphics.draw(dragged.sprite, x, y)
+				love.graphics.setColor(text_color)
+				love.graphics.print(dragged.amount, x + 2, y)
+				love.graphics.setColor(255,255,255,255)
+			end
 		end
 	end
 
@@ -126,7 +158,7 @@ return function()
 
 			-- Base case 1: Items is empty
 			if #items == 0 then
-				return true
+				return nil
 
 			-- Base case 2: Inventory is full
 			elseif not (row and column) then
