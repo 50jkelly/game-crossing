@@ -71,7 +71,7 @@ return function()
 
 		local next = function(row, column)
 			if slots[row][column + 1] then return row, column + 1 end
-			if slots[row + 1][1] then return row + 1, column end
+			if slots[row + 1] then return row + 1, 1 end
 			return nil
 		end
 
@@ -94,25 +94,25 @@ return function()
 
 			elseif slots[row][column] == EMPTY then
 				slots[row][column] = items[1]
-				add_item(tablex.sub(items, 2), row, column)
+				return add_item(tablex.sub(items, 2), row, column)
 
 			-- Case 2: Slot does not contain a matching item
 
 			elseif slots[row][column].name ~= items[1].name then
 				row, column = next(row, column)
-				add_item(items, row, column)
+				return add_item(items, row, column)
 
 			-- Case 3: Slot is full
 
 			elseif slots[row][column].amount == slots[row][column].stack_size then
 				row, column = next(row, column)
-				add_item(items, row, column)
+				return add_item(items, row, column)
 
 			-- Case 4: Slot is occupied but has room in stack
 
 			else
 				slots[row][column].amount = slots[row][column].amount + 1
-				add_item(tablex.sub(items, 2), row, column)
+				return add_item(tablex.sub(items, 2), row, column)
 			end
 		end
 
@@ -128,7 +128,7 @@ return function()
 
 		row = row or 1
 		column = column or 1
-		add_item(items, row, column)
+		return add_item(items, row, column)
 
 	end
 

@@ -84,10 +84,10 @@ this.initialise = function(_managers)
 		amount = 1,
 		stack_size = 2
 	})
-	inventory.add_item({
+	local r = inventory.add_item({
 		name = 'Seeds',
 		sprite = managers.graphics.graphics.items.seed,
-		amount = 4,
+		amount = 60,
 		stack_size = 2
 	})
 
