@@ -23,6 +23,7 @@ return function()
 	local sprite, slot_highlight_sprite, hidden, text_color
 
 	-- Drag and drop
+
 	local dragged,
 		dragged_row, dragged_column,
 		grabbed_x, grabbed_y
@@ -82,18 +83,40 @@ return function()
 
 			-- Drag
 			if love.mouse.isDown(1) and highlighted_slot and not dragged then
+
+				-- Get item details
 				dragged_row, dragged_column = unpack(highlighted_slot)
 				dragged = slots[dragged_row][dragged_column]
 
+				-- Get grabbed position
 				local x, y = slot_position(dragged_row, dragged_column)
 				grabbed_x = love.mouse.getX() - x
 				grabbed_y = love.mouse.getY() - y
 
+				-- Empty slot
 				slots[dragged_row][dragged_column] = EMPTY
 			end
 
 			-- Drop
 			if not(love.mouse.isDown(1)) and dragged then
+				local row, column = unpack(highlighted_slot)
+
+				-- Case 1: Dropping over another slot with a different item
+				if highlighted_slot and slots[row][column].name ~= dragged.name then
+					slots[dragged_row][dragged_column] = slots[row][column]
+					slots[row][column] = dragged
+
+				-- Case 2: Dropping over another slot with same item
+				elseif highlighted_slot then
+					local remainder = this.add_item(dragged, row, column, false)
+					slots[dragged_row][dragged_column] = remainder
+
+				-- Case 3: Dropping over an empty slot
+				elseif highlighted_slot and highlighted_slot == EMPTY then
+					this.add_item(dragged, row, column)
+				end
+
+				-- Empty dragged
 				dragged = nil
 			end
 		end
@@ -144,7 +167,7 @@ return function()
 
 	-- Add item
 
-	this.add_item = function(item, row, column)
+	this.add_item = function(item, row, column, try_other_slots)
 
 		-- Find next row or column
 		local next = function(row, column)
@@ -172,12 +195,20 @@ return function()
 
 			-- Case 2: Slot does not contain a matching item
 			elseif slots[row][column].name ~= items[1].name then
-				row, column = next(row, column)
+				if try_other_slots then 
+					row, column = next(row, column)
+				else
+					row, column = nil, nil
+				end
 				return add_item(items, row, column)
 
 			-- Case 3: Slot is full
 			elseif slots[row][column].amount == slots[row][column].stack_size then
-				row, column = next(row, column)
+				if try_other_slots then 
+					row, column = next(row, column)
+				else
+					row, column = nil, nil
+				end
 				return add_item(items, row, column)
 
 			-- Case 4: Slot is occupied but has room in stack
@@ -185,6 +216,11 @@ return function()
 				slots[row][column].amount = slots[row][column].amount + 1
 				return add_item(tablex.sub(items, 2), row, column)
 			end
+		end
+
+		-- Optional parameters
+		if try_other_slots == nil then
+			try_other_slots = true
 		end
 
 		-- Normalise item

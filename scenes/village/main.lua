@@ -52,43 +52,19 @@ this.initialise = function(_managers)
 	inventory.add_item({
 		name = 'Seeds',
 		sprite = managers.graphics.graphics.items.seed,
-		amount = 1,
-		stack_size = 2
+		amount = 3,
+		stack_size = 4
 	}, 2, 1)
 	inventory.add_item({
 		name = 'Seeds',
 		sprite = managers.graphics.graphics.items.seed,
-		amount = 1,
-		stack_size = 2
-	}, 2, 1)
+		amount = 2,
+		stack_size = 4
+	}, 2, 2)
 	inventory.add_item({
 		name = 'Books',
 		sprite = managers.graphics.graphics.items.book,
 		amount = 1,
-	})
-	inventory.add_item({
-		name = 'Seeds',
-		sprite = managers.graphics.graphics.items.seed,
-		amount = 1,
-		stack_size = 2
-	})
-	inventory.add_item({
-		name = 'Seeds',
-		sprite = managers.graphics.graphics.items.seed,
-		amount = 1,
-		stack_size = 2
-	})
-	inventory.add_item({
-		name = 'Seeds',
-		sprite = managers.graphics.graphics.items.seed,
-		amount = 1,
-		stack_size = 2
-	})
-	local r = inventory.add_item({
-		name = 'Seeds',
-		sprite = managers.graphics.graphics.items.seed,
-		amount = 60,
-		stack_size = 2
 	})
 
 end
