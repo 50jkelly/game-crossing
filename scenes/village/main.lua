@@ -101,6 +101,7 @@ this.update = function(dt)
 	update_all(foreground, dt)
 
 	tooltip.update(dt)
+	inventory.update()
 	cursor.update({foregorund, dt})
 end
 

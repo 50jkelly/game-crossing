@@ -51,7 +51,9 @@ function love.load()
 	managers.items.initialise(managers)
 	managers.scenes.initialise(managers)
 
-	inventory.initialise(managers.graphics.graphics.ui.inventory.inventory_20)
+	inventory.initialise(
+		managers.graphics.graphics.ui.inventory.inventory_20,
+		managers.graphics.graphics.ui.inventory.inventory_slot_highlight)
 end
 
 -- Update

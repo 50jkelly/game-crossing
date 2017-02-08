@@ -15,16 +15,26 @@ return function()
 	-- Slots
 
 	local slots = array2d.new(ROWS, COLUMNS, EMPTY)
+	local highlighted_slot = nil
 
 	-- Drawing
 
 	local width, height, x, y, slot_width, slot_height, main_margin_x, main_margin_y, slot_margin_x, slot_margin_y
-	local sprite, hidden, text_color
+	local sprite, slot_highlight_sprite, hidden, text_color
+
+	-- Slot position
+
+	local function slot_position(row, column)
+		return
+			x + main_margin_x + ((slot_width + slot_margin_x) * (column - 1)),
+			y + main_margin_y + ((slot_height + slot_margin_y) * (row - 1))
+	end
 
 	-- Initialise
 
-	this.initialise = function(_sprite, _slot_width, _slot_height, _main_margin_x, _main_margin_y, _slot_margin_x, _slot_margin_y, _text_color)
+	this.initialise = function(_sprite, _slot_highlight_sprite, _slot_width, _slot_height, _main_margin_x, _main_margin_y, _slot_margin_x, _slot_margin_y, _text_color)
 		sprite = _sprite
+		slot_highlight_sprite = _slot_highlight_sprite
 		slot_width = _slot_width or 50
 		slot_height = _slot_height or 50
 		main_margin_x = _main_margin_x or 20
@@ -36,23 +46,60 @@ return function()
 		hidden = true
 	end
 
+	-- Update
+
+	this.update = function()
+		if not hidden then
+
+			-- Inventory position
+			x = (love.graphics.getWidth() - width) / 2
+			y = (love.graphics.getHeight() - height) / 2
+
+			-- Mouse hover
+			for row, column, slot in array2d.iter(slots, true) do
+				local slot_x, slot_y = slot_position(row, column)
+				local mouse_x = love.mouse.getX()
+				local mouse_y = love.mouse.getY()
+
+				local mouse_over_slot =
+					mouse_x > slot_x and
+					mouse_x < slot_x + slot_width and
+					mouse_y > slot_y and
+					mouse_y < slot_y + slot_height
+
+				if mouse_over_slot then
+					highlighted_slot = { row, column }
+					break
+				else
+					highlighted_slot = nil
+				end
+			end
+		end
+	end
+
 	-- Draw
 
 	this.draw = function()
 		if not hidden then
-			x = (love.graphics.getWidth() - width) / 2
-			y = (love.graphics.getHeight() - height) / 2
+			-- Panel
 			love.graphics.draw(sprite, x, y)
 
+			-- Slots
 			for row, column, slot in array2d.iter(slots, true) do
 				if slot ~= EMPTY then
-					local slot_x = x + main_margin_x + ((slot_width + slot_margin_x) * (column - 1))
-					local slot_y = y + main_margin_y + ((slot_height + slot_margin_y) * (row - 1))
+					local slot_x, slot_y = slot_position(row, column)
 					love.graphics.draw(slot.sprite, slot_x, slot_y)
 					love.graphics.setColor(text_color)
 					love.graphics.print(slot.amount, slot_x + 2, slot_y)
 					love.graphics.setColor(255,255,255,255)
 				end
+			end
+
+			-- Highlighted slot
+			if highlighted_slot then
+				local row, column = unpack(highlighted_slot)
+				local x, y = slot_position(row, column)
+				love.graphics.draw(slot_highlight_sprite, x, y)
 			end
 		end
 	end
@@ -68,7 +115,6 @@ return function()
 	this.add_item = function(item, row, column)
 
 		-- Find next row or column
-
 		local next = function(row, column)
 			if slots[row][column + 1] then return row, column + 1 end
 			if slots[row + 1] then return row + 1, 1 end
@@ -76,40 +122,33 @@ return function()
 		end
 
 		-- Main function
-
 		local function add_item(items, row, column)
 
 			-- Base case 1: Items is empty
-
 			if #items == 0 then
 				return true
 
 			-- Base case 2: Inventory is full
-
 			elseif not (row and column) then
 				items[1].amount = #items
 				return items[1] -- Return leftover items
 			
 			-- Case 1: Slot is empty
-
 			elseif slots[row][column] == EMPTY then
 				slots[row][column] = items[1]
 				return add_item(tablex.sub(items, 2), row, column)
 
 			-- Case 2: Slot does not contain a matching item
-
 			elseif slots[row][column].name ~= items[1].name then
 				row, column = next(row, column)
 				return add_item(items, row, column)
 
 			-- Case 3: Slot is full
-
 			elseif slots[row][column].amount == slots[row][column].stack_size then
 				row, column = next(row, column)
 				return add_item(items, row, column)
 
 			-- Case 4: Slot is occupied but has room in stack
-
 			else
 				slots[row][column].amount = slots[row][column].amount + 1
 				return add_item(tablex.sub(items, 2), row, column)
@@ -117,7 +156,6 @@ return function()
 		end
 
 		-- Normalise item
-
 		local items = {}
 
 		for i=1, item.amount, 1 do
@@ -126,21 +164,11 @@ return function()
 			table.insert(items, _item)
 		end
 
+		-- Add item
 		row = row or 1
 		column = column or 1
 		return add_item(items, row, column)
 
-	end
-
-	-- Find empty slot
-
-	this.find_empty = function()
-		for row, column, slot in array2d.iter(slots, true) do
-			if slot == EMPTY then
-				return { row, column, slot }
-			end
-		end
-		return nil
 	end
 
 	-- Find item
