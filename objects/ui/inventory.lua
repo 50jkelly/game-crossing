@@ -99,7 +99,7 @@ return function()
 
 			-- Drop
 			if not(love.mouse.isDown(1)) and dragged then
-				local row, column = unpack(highlighted_slot)
+				local row, column = unpack(highlighted_slot or {0, 0})
 
 				-- Case 1: Dropping over another slot with a different item
 				if highlighted_slot and slots[row][column].name ~= dragged.name then
