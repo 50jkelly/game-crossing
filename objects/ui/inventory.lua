@@ -12,6 +12,10 @@ return function()
 	local ROWS = 2
 	local COLUMNS = 10
 
+	-- Mouse position
+
+	local mouse
+
 	-- Slots
 
 	local slots = array2d.new(ROWS, COLUMNS, EMPTY)
@@ -20,10 +24,11 @@ return function()
 	-- Drawing
 
 	local width, height, x, y, slot_width, slot_height, main_margin_x, main_margin_y, slot_margin_x, slot_margin_y
-	local sprite, slot_highlight_sprite, trash_sprite, hidden, text_color
+	local sprite, slot_highlight_sprite, hidden, text_color
 
 	-- Trash
-	local trash_x, trash_y, trash_width, trash_height
+
+	local trash
 
 	-- Drag and drop
 
@@ -31,25 +36,25 @@ return function()
 		dragged_row, dragged_column,
 		grabbed_x, grabbed_y
 
-	-- Slot position
+	-- Slot information
 
-	local function slot_position(row, column)
-		return
-			x + main_margin_x + ((slot_width + slot_margin_x) * (column - 1)),
-			y + main_margin_y + ((slot_height + slot_margin_y) * (row - 1))
+	local function slot_info(row, column)
+		return {
+			x = x + main_margin_x + ((slot_width + slot_margin_x) * (column - 1)),
+			y = y + main_margin_y + ((slot_height + slot_margin_y) * (row - 1)),
+			width = slot_width,
+			height = slot_height
+		}
 	end
 
-	-- Mouse over trash
+	-- Mouse over
 
-	local function mouse_over_trash()
-		local mouse_x = love.mouse.getX()
-		local mouse_y = love.mouse.getY()
-
+	local function mouse_over(thing)
 		return
-			mouse_x > trash_x and
-			mouse_x < trash_x + trash_width and
-			mouse_y > trash_y and
-			mouse_y < trash_y + trash_height
+			mouse.x > thing.x and
+			mouse.x < thing.x + thing.width and
+			mouse.y > thing.y and
+			mouse.y < thing.y + thing.height
 	end
 
 	-- Initialise
@@ -57,7 +62,6 @@ return function()
 	this.initialise = function(_sprite, _slot_highlight_sprite, _trash_sprite, _slot_width, _slot_height, _main_margin_x, _main_margin_y, _slot_margin_x, _slot_margin_y, _text_color)
 		sprite = _sprite
 		slot_highlight_sprite = _slot_highlight_sprite
-		trash_sprite = _trash_sprite
 		slot_width = _slot_width or 50
 		slot_height = _slot_height or 50
 		main_margin_x = _main_margin_x or 20
@@ -67,7 +71,11 @@ return function()
 		text_color = _text_color or {0,0,0,255}
 		width, height = sprite:getDimensions()
 		hidden = true
-		trash_width, trash_height = trash_sprite:getDimensions()
+
+		-- Trash
+		trash = {}
+		trash.sprite = _trash_sprite
+		trash.width, trash.height = _trash_sprite:getDimensions()
 	end
 
 	-- Update
@@ -75,30 +83,25 @@ return function()
 	this.update = function()
 		if not hidden then
 
+			-- Mouse position
+			mouse = {}
+			mouse.x = love.mouse.getX()
+			mouse.y = love.mouse.getY()
+
 			-- Inventory position
 			x = (love.graphics.getWidth() - width) / 2
 			y = (love.graphics.getHeight() - height) / 2
 
 			-- Trash position
-			trash_x = x + width - trash_width
-			trash_y = y + height + main_margin_y
+			trash.x = x + width - trash.width
+			trash.y = y + height + main_margin_y
 
 			-- Reset
 			highlighted_slot = nil
 
 			-- Mouse hover
 			for row, column, slot in array2d.iter(slots, true) do
-				local slot_x, slot_y = slot_position(row, column)
-				local mouse_x = love.mouse.getX()
-				local mouse_y = love.mouse.getY()
-
-				local mouse_over_slot =
-					mouse_x > slot_x and
-					mouse_x < slot_x + slot_width and
-					mouse_y > slot_y and
-					mouse_y < slot_y + slot_height
-
-				if mouse_over_slot then
+				if mouse_over(slot_info(row, column)) then
 					highlighted_slot = { row, column }
 				end
 			end
@@ -111,9 +114,9 @@ return function()
 				dragged = slots[dragged_row][dragged_column]
 
 				-- Get grabbed position
-				local x, y = slot_position(dragged_row, dragged_column)
-				grabbed_x = love.mouse.getX() - x
-				grabbed_y = love.mouse.getY() - y
+				local s = slot_info(dragged_row, dragged_column)
+				grabbed_x = love.mouse.getX() - s.x
+				grabbed_y = love.mouse.getY() - s.y
 
 				-- Empty slot
 				slots[dragged_row][dragged_column] = EMPTY
@@ -129,22 +132,17 @@ return function()
 					slots[row][column] = dragged
 					dragged = nil
 
-				-- Case 2: Dropping over another slot with same item
+				-- Case 2: Dropping over another slot
 				elseif highlighted_slot then
 					local remainder = this.add_item(dragged, row, column, false)
 					slots[dragged_row][dragged_column] = remainder
 					dragged = nil
 
-				-- Case 3: Dropping over an empty slot
-				elseif highlighted_slot and highlighted_slot == EMPTY then
-					this.add_item(dragged, row, column)
+				-- Case 3: Dropping over the trash
+				elseif mouse_over(trash) then
 					dragged = nil
 
-				-- Case 4: Dropping over the trash
-				elseif mouse_over_trash() then
-					dragged = nil
-
-				-- Case 5: Dropping anywhere else
+				-- Case 4: Dropping anywhere else
 				else
 					slots[dragged_row][dragged_column] = dragged
 					dragged = nil
@@ -161,15 +159,15 @@ return function()
 			love.graphics.draw(sprite, x, y)
 
 			-- Trash
-			love.graphics.draw(trash_sprite, trash_x, trash_y)
+			love.graphics.draw(trash.sprite, trash.x, trash.y)
 
 			-- Slots
 			for row, column, slot in array2d.iter(slots, true) do
 				if slot ~= EMPTY then
-					local slot_x, slot_y = slot_position(row, column)
-					love.graphics.draw(slot.sprite, slot_x, slot_y)
+					local s = slot_info(row, column)
+					love.graphics.draw(slot.sprite, s.x, s.y)
 					love.graphics.setColor(text_color)
-					love.graphics.print(slot.amount, slot_x + 2, slot_y)
+					love.graphics.print(slot.amount, s.x + 2, s.y)
 					love.graphics.setColor(255,255,255,255)
 				end
 			end
@@ -177,8 +175,8 @@ return function()
 			-- Highlighted slot
 			if highlighted_slot then
 				local row, column = unpack(highlighted_slot)
-				local x, y = slot_position(row, column)
-				love.graphics.draw(slot_highlight_sprite, x, y)
+				local s = slot_info(row, column)
+				love.graphics.draw(slot_highlight_sprite, s.x, s.y)
 			end
 
 			-- Drag and drop
