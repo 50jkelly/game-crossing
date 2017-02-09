@@ -12,9 +12,9 @@ return function()
 	local ROWS = 2
 	local COLUMNS = 10
 
-	-- Mouse position
+	-- Mouse
 
-	local mouse
+	local mouse = {}
 
 	-- Slots
 
@@ -28,13 +28,11 @@ return function()
 
 	-- Trash
 
-	local trash
+	local trash = {}
 
 	-- Drag and drop
 
-	local dragged,
-		dragged_row, dragged_column,
-		grabbed_x, grabbed_y
+	local dragged = {}
 
 	-- Slot information
 
@@ -73,7 +71,6 @@ return function()
 		hidden = true
 
 		-- Trash
-		trash = {}
 		trash.sprite = _trash_sprite
 		trash.width, trash.height = _trash_sprite:getDimensions()
 	end
@@ -84,9 +81,10 @@ return function()
 		if not hidden then
 
 			-- Mouse position
-			mouse = {}
 			mouse.x = love.mouse.getX()
 			mouse.y = love.mouse.getY()
+			mouse.left = love.mouse.isDown(1)
+			mouse.right = love.mouse.isDown(2)
 
 			-- Inventory position
 			x = (love.graphics.getWidth() - width) / 2
@@ -107,45 +105,51 @@ return function()
 			end
 
 			-- Drag
-			if love.mouse.isDown(1) and highlighted_slot and not dragged then
+			if mouse.left then
+				mouse.clicking = true
+			end
+
+			if not mouse.left and mouse.clicking and highlighted_slot and not dragged.item then
+				mouse.clicking = false
 
 				-- Get item details
-				dragged_row, dragged_column = unpack(highlighted_slot)
-				dragged = slots[dragged_row][dragged_column]
+				dragged.row, dragged.column = unpack(highlighted_slot)
+				dragged.item = slots[dragged.row][dragged.column]
 
 				-- Get grabbed position
-				local s = slot_info(dragged_row, dragged_column)
-				grabbed_x = love.mouse.getX() - s.x
-				grabbed_y = love.mouse.getY() - s.y
+				local s = slot_info(dragged.row, dragged.column)
+				dragged.sprite_x = love.mouse.getX() - s.x
+				dragged.sprite_y = love.mouse.getY() - s.y
 
 				-- Empty slot
-				slots[dragged_row][dragged_column] = EMPTY
+				slots[dragged.row][dragged.column] = EMPTY
 			end
 
 			-- Drop
-			if not(love.mouse.isDown(1)) and dragged then
+			if not (mouse.left) and mouse.clicking and dragged.item then
+				mouse.clicking = false
 				local row, column = unpack(highlighted_slot or {0, 0})
 
 				-- Case 1: Dropping over another slot with a different item
-				if highlighted_slot and slots[row][column].name ~= dragged.name then
-					slots[dragged_row][dragged_column] = slots[row][column]
-					slots[row][column] = dragged
-					dragged = nil
+				if highlighted_slot and slots[row][column].name ~= dragged.item.name then
+					slots[dragged.row][dragged.column] = slots[row][column]
+					slots[row][column] = dragged.item
+					dragged.item = nil
 
 				-- Case 2: Dropping over another slot
 				elseif highlighted_slot then
-					local remainder = this.add_item(dragged, row, column, false)
-					slots[dragged_row][dragged_column] = remainder
-					dragged = nil
+					local remainder = this.add_item(dragged.item, row, column, false)
+					slots[dragged.row][dragged.column] = remainder
+					dragged.item = nil
 
 				-- Case 3: Dropping over the trash
 				elseif mouse_over(trash) then
-					dragged = nil
+					dragged.item = nil
 
 				-- Case 4: Dropping anywhere else
 				else
-					slots[dragged_row][dragged_column] = dragged
-					dragged = nil
+					slots[dragged.row][dragged.column] = dragged.item
+					dragged.item = nil
 				end
 			end
 		end
@@ -180,12 +184,12 @@ return function()
 			end
 
 			-- Drag and drop
-			if dragged then
-				local x = love.mouse.getX() - grabbed_x
-				local y = love.mouse.getY() - grabbed_y
-				love.graphics.draw(dragged.sprite, x, y)
+			if dragged.item then
+				local x = love.mouse.getX() - dragged.sprite_x
+				local y = love.mouse.getY() - dragged.sprite_y
+				love.graphics.draw(dragged.item.sprite, x, y)
 				love.graphics.setColor(text_color)
-				love.graphics.print(dragged.amount, x + 2, y)
+				love.graphics.print(dragged.item.amount, x + 2, y)
 				love.graphics.setColor(255,255,255,255)
 			end
 		end
