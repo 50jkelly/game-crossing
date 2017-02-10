@@ -45,7 +45,7 @@ this.initialise = function(_managers)
 
 	signal.register('keypressed', function(key)
 		if key == 'inventory' then
-			inventory.toggle()
+			inventory.toggle('main')
 		end
 	end)
 

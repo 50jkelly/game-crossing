@@ -218,8 +218,8 @@ return function()
 
 	-- Visibility
 
-	this.toggle = function()
-		panels.main.hidden = not panels.main.hidden
+	this.toggle = function(panel_name)
+		panels[panel_name].hidden = not panels[panel_name].hidden
 	end
 
 	-- Add item
@@ -301,8 +301,8 @@ return function()
 
 	-- Find item
 
-	this.find = function(name)
-		for row, column, slot in array2d.iter(panels.main.slots, true) do
+	this.find = function(name, panel)
+		for row, column, slot in array2d.iter(panel.slots, true) do
 			if slot.name == name then
 				return { row, column, slot }
 			end
