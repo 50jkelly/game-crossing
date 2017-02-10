@@ -16,6 +16,10 @@ return function()
 
 	local mouse = {}
 
+	-- Panels
+
+	local panels = {}
+
 	-- Slots
 
 	local slots = array2d.new(ROWS, COLUMNS, EMPTY)
@@ -38,47 +42,55 @@ return function()
 
 	local function slot_info(row, column)
 		return {
-			x = x + main_margin_x + ((slot_width + slot_margin_x) * (column - 1)),
-			y = y + main_margin_y + ((slot_height + slot_margin_y) * (row - 1)),
-			width = slot_width,
-			height = slot_height
+			x = x + panels.main.padding_x + ((panels.main.slot_width + panels.main.margin_x) * (column - 1)),
+			y = y + panels.main.padding_y + ((panels.main.slot_height + panels.main.margin_y) * (row - 1)),
+			width = panels.main.slot_width,
+			height = panels.main.slot_height
 		}
 	end
 
 	-- Mouse over
 
-	local function mouse_over(thing)
+	local function mouse_over(rect)
 		return
-			mouse.x > thing.x and
-			mouse.x < thing.x + thing.width and
-			mouse.y > thing.y and
-			mouse.y < thing.y + thing.height
+			mouse.x > rect.x and
+			mouse.x < rect.x + rect.width and
+			mouse.y > rect.y and
+			mouse.y < rect.y + rect.height
+	end
+
+	-- Add a panel
+
+	function this.add_panel(args)
+		panels[args.name] = args
 	end
 
 	-- Initialise
 
 	this.initialise = function(_sprite, _slot_highlight_sprite, _trash_sprite, _slot_width, _slot_height, _main_margin_x, _main_margin_y, _slot_margin_x, _slot_margin_y, _text_color)
-		sprite = _sprite
-		slot_highlight_sprite = _slot_highlight_sprite
-		slot_width = _slot_width or 50
-		slot_height = _slot_height or 50
-		main_margin_x = _main_margin_x or 20
-		main_margin_y = _main_margin_y or 10
-		slot_margin_x = _slot_margin_x or 10
-		slot_margin_y = _slot_margin_y or 10
-		text_color = _text_color or {0,0,0,255}
-		width, height = sprite:getDimensions()
-		hidden = true
+		panels.main = {}
+		panels.main.sprite = _sprite
+		panels.main.highlight_sprite = _slot_highlight_sprite
+		panels.main.slot_width = _slot_width or 50
+		panels.main.slot_height = _slot_height or 50
+		panels.main.padding_x = _main_margin_x or 20
+		panels.main.padding_y = _main_margin_y or 10
+		panels.main.margin_x = _slot_margin_x or 10
+		panels.main.margin_y = _slot_margin_y or 10
+		panels.main.text_color = _text_color or {0,0,0,255}
+		panels.main.width, panels.main.height = panels.main.sprite:getDimensions()
+		panels.main.hidden = true
 
 		-- Trash
-		trash.sprite = _trash_sprite
-		trash.width, trash.height = _trash_sprite:getDimensions()
+		panels.main.trash = {}
+		panels.main.trash.sprite = _trash_sprite
+		panels.main.trash.width, panels.main.trash.height = _trash_sprite:getDimensions()
 	end
 
 	-- Update
 
 	this.update = function()
-		if not hidden then
+		if not panels.main.hidden then
 
 			-- Mouse position
 			mouse.x = love.mouse.getX()
@@ -87,12 +99,12 @@ return function()
 			mouse.right = love.mouse.isDown(2)
 
 			-- Inventory position
-			x = (love.graphics.getWidth() - width) / 2
-			y = (love.graphics.getHeight() - height) / 2
+			x = (love.graphics.getWidth() - panels.main.width) / 2
+			y = (love.graphics.getHeight() - panels.main.height) / 2
 
 			-- Trash position
-			trash.x = x + width - trash.width
-			trash.y = y + height + main_margin_y
+			panels.main.trash.x = x + panels.main.width - panels.main.trash.width
+			panels.main.trash.y = y + panels.main.height + panels.main.padding_y
 
 			-- Reset
 			highlighted_slot = nil
@@ -143,7 +155,7 @@ return function()
 					dragged.item = nil
 
 				-- Case 3: Dropping over the trash
-				elseif mouse_over(trash) then
+				elseif mouse_over(panels.main.trash) then
 					dragged.item = nil
 
 				-- Case 4: Dropping anywhere else
@@ -158,19 +170,19 @@ return function()
 	-- Draw
 
 	this.draw = function()
-		if not hidden then
+		if not panels.main.hidden then
 			-- Panel
-			love.graphics.draw(sprite, x, y)
+			love.graphics.draw(panels.main.sprite, x, y)
 
 			-- Trash
-			love.graphics.draw(trash.sprite, trash.x, trash.y)
+			love.graphics.draw(panels.main.trash.sprite, panels.main.trash.x, panels.main.trash.y)
 
 			-- Slots
 			for row, column, slot in array2d.iter(slots, true) do
 				if slot ~= EMPTY then
 					local s = slot_info(row, column)
 					love.graphics.draw(slot.sprite, s.x, s.y)
-					love.graphics.setColor(text_color)
+					love.graphics.setColor(panels.main.text_color)
 					love.graphics.print(slot.amount, s.x + 2, s.y)
 					love.graphics.setColor(255,255,255,255)
 				end
@@ -180,7 +192,7 @@ return function()
 			if highlighted_slot then
 				local row, column = unpack(highlighted_slot)
 				local s = slot_info(row, column)
-				love.graphics.draw(slot_highlight_sprite, s.x, s.y)
+				love.graphics.draw(panels.main.highlight_sprite, s.x, s.y)
 			end
 
 			-- Drag and drop
@@ -188,7 +200,7 @@ return function()
 				local x = love.mouse.getX() - dragged.sprite_x
 				local y = love.mouse.getY() - dragged.sprite_y
 				love.graphics.draw(dragged.item.sprite, x, y)
-				love.graphics.setColor(text_color)
+				love.graphics.setColor(panels.main.text_color)
 				love.graphics.print(dragged.item.amount, x + 2, y)
 				love.graphics.setColor(255,255,255,255)
 			end
@@ -198,7 +210,7 @@ return function()
 	-- Visibility
 
 	this.toggle = function()
-		hidden = not hidden
+		panels.main.hidden = not panels.main.hidden
 	end
 
 	-- Add item
