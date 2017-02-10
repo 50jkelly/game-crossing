@@ -22,13 +22,7 @@ return function()
 
 	-- Slots
 
-	local slots = array2d.new(ROWS, COLUMNS, EMPTY)
 	local highlighted_slot = nil
-
-	-- Drawing
-
-	local width, height, x, y, slot_width, slot_height, main_margin_x, main_margin_y, slot_margin_x, slot_margin_y
-	local sprite, slot_highlight_sprite, hidden, text_color
 
 	-- Trash
 
@@ -42,8 +36,8 @@ return function()
 
 	local function slot_info(row, column)
 		return {
-			x = x + panels.main.padding_x + ((panels.main.slot_width + panels.main.margin_x) * (column - 1)),
-			y = y + panels.main.padding_y + ((panels.main.slot_height + panels.main.margin_y) * (row - 1)),
+			x = panels.main.x + panels.main.padding_x + ((panels.main.slot_width + panels.main.margin_x) * (column - 1)),
+			y = panels.main.y + panels.main.padding_y + ((panels.main.slot_height + panels.main.margin_y) * (row - 1)),
 			width = panels.main.slot_width,
 			height = panels.main.slot_height
 		}
@@ -81,6 +75,9 @@ return function()
 		panels.main.width, panels.main.height = panels.main.sprite:getDimensions()
 		panels.main.hidden = true
 
+		-- Slots
+		panels.main.slots = array2d.new(ROWS, COLUMNS, EMPTY)
+
 		-- Trash
 		panels.main.trash = {}
 		panels.main.trash.sprite = _trash_sprite
@@ -99,18 +96,18 @@ return function()
 			mouse.right = love.mouse.isDown(2)
 
 			-- Inventory position
-			x = (love.graphics.getWidth() - panels.main.width) / 2
-			y = (love.graphics.getHeight() - panels.main.height) / 2
+			panels.main.x = (love.graphics.getWidth() - panels.main.width) / 2
+			panels.main.y = (love.graphics.getHeight() - panels.main.height) / 2
 
 			-- Trash position
-			panels.main.trash.x = x + panels.main.width - panels.main.trash.width
-			panels.main.trash.y = y + panels.main.height + panels.main.padding_y
+			panels.main.trash.x = panels.main.x + panels.main.width - panels.main.trash.width
+			panels.main.trash.y = panels.main.y + panels.main.height + panels.main.padding_y
 
 			-- Reset
 			highlighted_slot = nil
 
 			-- Mouse hover
-			for row, column, slot in array2d.iter(slots, true) do
+			for row, column, slot in array2d.iter(panels.main.slots, true) do
 				if mouse_over(slot_info(row, column)) then
 					highlighted_slot = { row, column }
 				end
@@ -126,7 +123,7 @@ return function()
 
 				-- Get item details
 				dragged.row, dragged.column = unpack(highlighted_slot)
-				dragged.item = slots[dragged.row][dragged.column]
+				dragged.item = panels.main.slots[dragged.row][dragged.column]
 
 				-- Get grabbed position
 				local s = slot_info(dragged.row, dragged.column)
@@ -134,7 +131,7 @@ return function()
 				dragged.sprite_y = love.mouse.getY() - s.y
 
 				-- Empty slot
-				slots[dragged.row][dragged.column] = EMPTY
+				panels.main.slots[dragged.row][dragged.column] = EMPTY
 			end
 
 			-- Drop
@@ -143,15 +140,15 @@ return function()
 				local row, column = unpack(highlighted_slot or {0, 0})
 
 				-- Case 1: Dropping over another slot with a different item
-				if highlighted_slot and slots[row][column].name ~= dragged.item.name then
-					slots[dragged.row][dragged.column] = slots[row][column]
-					slots[row][column] = dragged.item
+				if highlighted_slot and panels.main.slots[row][column].name ~= dragged.item.name then
+					panels.main.slots[dragged.row][dragged.column] = panels.main.slots[row][column]
+					panels.main.slots[row][column] = dragged.item
 					dragged.item = nil
 
 				-- Case 2: Dropping over another slot
 				elseif highlighted_slot then
 					local remainder = this.add_item(dragged.item, row, column, false)
-					slots[dragged.row][dragged.column] = remainder
+					panels.main.slots[dragged.row][dragged.column] = remainder
 					dragged.item = nil
 
 				-- Case 3: Dropping over the trash
@@ -160,7 +157,7 @@ return function()
 
 				-- Case 4: Dropping anywhere else
 				else
-					slots[dragged.row][dragged.column] = dragged.item
+					panels.main.slots[dragged.row][dragged.column] = dragged.item
 					dragged.item = nil
 				end
 			end
@@ -172,13 +169,13 @@ return function()
 	this.draw = function()
 		if not panels.main.hidden then
 			-- Panel
-			love.graphics.draw(panels.main.sprite, x, y)
+			love.graphics.draw(panels.main.sprite, panels.main.x, panels.main.y)
 
 			-- Trash
 			love.graphics.draw(panels.main.trash.sprite, panels.main.trash.x, panels.main.trash.y)
 
 			-- Slots
-			for row, column, slot in array2d.iter(slots, true) do
+			for row, column, slot in array2d.iter(panels.main.slots, true) do
 				if slot ~= EMPTY then
 					local s = slot_info(row, column)
 					love.graphics.draw(slot.sprite, s.x, s.y)
@@ -237,12 +234,12 @@ return function()
 				return items[1] -- Return leftover items
 			
 			-- Case 1: Slot is empty
-			elseif slots[row][column] == EMPTY then
-				slots[row][column] = items[1]
+			elseif panels.main.slots[row][column] == EMPTY then
+				panels.main.slots[row][column] = items[1]
 				return add_item(tablex.sub(items, 2), row, column)
 
 			-- Case 2: Slot does not contain a matching item
-			elseif slots[row][column].name ~= items[1].name then
+			elseif panels.main.slots[row][column].name ~= items[1].name then
 				if try_other_slots then 
 					row, column = next(row, column)
 				else
@@ -251,7 +248,7 @@ return function()
 				return add_item(items, row, column)
 
 			-- Case 3: Slot is full
-			elseif slots[row][column].amount == slots[row][column].stack_size then
+			elseif panels.main.slots[row][column].amount == panels.main.slots[row][column].stack_size then
 				if try_other_slots then 
 					row, column = next(row, column)
 				else
@@ -261,7 +258,7 @@ return function()
 
 			-- Case 4: Slot is occupied but has room in stack
 			else
-				slots[row][column].amount = slots[row][column].amount + 1
+				panels.main.slots[row][column].amount = panels.main.slots[row][column].amount + 1
 				return add_item(tablex.sub(items, 2), row, column)
 			end
 		end
@@ -290,7 +287,7 @@ return function()
 	-- Find item
 
 	this.find = function(name)
-		for row, column, slot in array2d.iter(slots, true) do
+		for row, column, slot in array2d.iter(panels.main.slots, true) do
 			if slot.name == name then
 				return { row, column, slot }
 			end
