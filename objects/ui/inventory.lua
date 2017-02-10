@@ -105,9 +105,8 @@ return function()
 
 		-- Trash
 		if _trash_sprite then
-			panels.main.trash = {}
-			panels.main.trash.sprite = _trash_sprite
-			panels.main.trash.width, panels.main.trash.height = _trash_sprite:getDimensions()
+			trash.sprite = _trash_sprite
+			trash.width, trash.height = _trash_sprite:getDimensions()
 		end
 
 		-- Position
@@ -136,18 +135,20 @@ return function()
 				-- Panel position
 				panel.position(panel)
 
-				-- Trash position
-				if panel.trash then
-					panel.trash.x = panel.x + panel.width - panel.trash.width
-					panel.trash.y = panel.y + panel.height + panel.padding_y
-				end
-
 				-- Mouse hover
 				for row, column, slot in array2d.iter(panel.slots, true) do
 					if mouse_over(slot_info(panel, row, column)) then
 						highlighted_slot = { panel, row, column }
 					end
 				end
+			end
+		end
+
+		-- Trash position
+		if trash then
+			if panels.main.x and panels.main.y then
+				trash.x = panels.main.x + panels.main.width - trash.width
+				trash.y = panels.main.y + panels.main.height + panels.main.padding_y
 			end
 		end
 
@@ -183,7 +184,7 @@ return function()
 			local dest_panel, row, column = unpack(highlighted_slot or {0, 0, 0})
 
 			-- Case 1: Dropping over the trash
-			if dragged.panel.trash and mouse_over(dragged.panel.trash) then
+			if trash and mouse_over(trash) then
 				dragged.item = nil
 
 				-- Case 2: Dropping over another slot with a different item
@@ -209,15 +210,15 @@ return function()
 	-- Draw
 
 	this.draw = function()
+		-- Trash
+		if trash then
+			love.graphics.draw(trash.sprite, trash.x, trash.y)
+		end
+
 		for _, panel in pairs(panels) do
 			if not panel.hidden then
 				-- Panel
 				love.graphics.draw(panel.sprite, panel.x, panel.y)
-
-				-- Trash
-				if panel.trash then
-					love.graphics.draw(panel.trash.sprite, panel.trash.x, panel.trash.y)
-				end
 
 				-- Slots
 				for row, column, slot in array2d.iter(panel.slots, true) do
