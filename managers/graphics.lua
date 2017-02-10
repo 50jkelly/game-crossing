@@ -78,6 +78,7 @@ this.load = function()
 				inventory_20 = love.graphics.newImage('graphics/ui/inventory/inventory_20.png'),
 				inventory_slot_highlight = love.graphics.newImage('graphics/ui/inventory/inventory_slot_highlight.png'),
 				trash = love.graphics.newImage('graphics/ui/inventory/trash.png'),
+				action_bar_10 = love.graphics.newImage('graphics/ui/inventory/action_bar_10.png'),
 			}
 		},
 	}

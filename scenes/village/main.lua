@@ -43,6 +43,19 @@ this.initialise = function(_managers)
 
 	-- Inventory
 
+	inventory.add_panel({
+		name = 'action_bar',
+		sprite = managers.graphics.graphics.ui.inventory.action_bar_10,
+		highlight_sprite = managers.graphics.graphics.ui.inventory.inventory_slot_highlight,
+		hidden = false,
+		rows = 1,
+		columns = 10,
+		position = function(panel)
+			panel.x = (love.graphics.getWidth() - panel.width) / 2
+			panel.y = love.graphics.getHeight() - panel.height - 20
+		end
+	})
+
 	signal.register('keypressed', function(key)
 		if key == 'inventory' then
 			inventory.toggle('main')
@@ -65,7 +78,7 @@ this.initialise = function(_managers)
 		name = 'Books',
 		sprite = managers.graphics.graphics.items.book,
 		amount = 1,
-	}, 'main')
+	}, 'action_bar')
 
 end
 

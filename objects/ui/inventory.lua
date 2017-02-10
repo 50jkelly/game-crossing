@@ -56,7 +56,31 @@ return function()
 	-- Add a panel
 
 	function this.add_panel(args)
-		panels[args.name] = args
+		local defaults = {
+			slot_width = 50,
+			slot_height = 50,
+			padding_x = 20,
+			padding_y = 10,
+			margin_x = 10,
+			margin_y = 10,
+			text_color = {0,0,0,255},
+		}
+
+		panels[args.name] = {}
+
+		for index, _ in pairs(args) do
+			panels[args.name][index] = args[index]
+		end
+
+		for index, _ in pairs(defaults) do
+			panels[args.name][index] = panels[args.name][index] or defaults[index]
+		end
+
+		panels[args.name].width, panels[args.name].height = panels[args.name].sprite:getDimensions()
+
+		local rows = args.rows or ROWS
+		local columns = args.columns or COLUMNS
+		panels[args.name].slots = array2d.new(rows, columns, EMPTY)
 	end
 
 	-- Initialise
@@ -85,11 +109,20 @@ return function()
 			panels.main.trash.sprite = _trash_sprite
 			panels.main.trash.width, panels.main.trash.height = _trash_sprite:getDimensions()
 		end
+
+		-- Position
+		function panels.main.position(panel)
+			panel.x = (love.graphics.getWidth() - panel.width) / 2
+			panel.y = (love.graphics.getHeight() - panel.height) / 2
+		end
 	end
 
 	-- Update
 
 	this.update = function()
+
+		-- Reset
+		highlighted_slot = nil
 
 		-- Mouse position
 		mouse.x = love.mouse.getX()
@@ -97,15 +130,11 @@ return function()
 		mouse.left = love.mouse.isDown(1)
 		mouse.right = love.mouse.isDown(2)
 
-		-- Reset
-		highlighted_slot = nil
-
 		for _, panel in pairs(panels) do
-			if not panels.main.hidden then
+			if not panel.hidden then
 
 				-- Panel position
-				panel.x = (love.graphics.getWidth() - panel.width) / 2
-				panel.y = (love.graphics.getHeight() - panel.height) / 2
+				panel.position(panel)
 
 				-- Trash position
 				if panel.trash then
@@ -119,55 +148,60 @@ return function()
 						highlighted_slot = { panel, row, column }
 					end
 				end
+			end
+		end
 
-				-- Drag
-				if mouse.left then
-					mouse.clicking = true
-				end
+		-- Drag
+		if mouse.left then
+			mouse.clicking = true
+		end
 
-				if not mouse.left and mouse.clicking and highlighted_slot and not dragged.item then
-					mouse.clicking = false
+		if not mouse.left and mouse.clicking and highlighted_slot and not dragged.item then
+			mouse.clicking = false
 
-					-- Get item details
-					_, dragged.row, dragged.column = unpack(highlighted_slot)
-					dragged.item = panel.slots[dragged.row][dragged.column]
+			-- Get item details
+			dragged.panel, dragged.row, dragged.column = unpack(highlighted_slot)
+			dragged.item = dragged.panel.slots[dragged.row][dragged.column]
 
-					-- Get grabbed position
-					local s = slot_info(panel, dragged.row, dragged.column)
-					dragged.sprite_x = love.mouse.getX() - s.x
-					dragged.sprite_y = love.mouse.getY() - s.y
+			if dragged.item ~= EMPTY then
 
-					-- Empty slot
-					panel.slots[dragged.row][dragged.column] = EMPTY
-				end
+				-- Get grabbed position
+				local s = slot_info(dragged.panel, dragged.row, dragged.column)
+				dragged.sprite_x = love.mouse.getX() - s.x
+				dragged.sprite_y = love.mouse.getY() - s.y
 
-				-- Drop
-				if not (mouse.left) and mouse.clicking and dragged.item then
-					mouse.clicking = false
-					local _, row, column = unpack(highlighted_slot or {0, 0})
+				-- Empty slot
+				dragged.panel.slots[dragged.row][dragged.column] = EMPTY
+			else
+				dragged.item = nil
+			end
+		end
 
-					-- Case 1: Dropping over another slot with a different item
-					if highlighted_slot and panel.slots[row][column].name ~= dragged.item.name then
-						panel.slots[dragged.row][dragged.column] = panel.slots[row][column]
-						panel.slots[row][column] = dragged.item
-						dragged.item = nil
+		-- Drop
+		if not mouse.left and mouse.clicking and dragged.item then
+			mouse.clicking = false
+			local dest_panel, row, column = unpack(highlighted_slot or {0, 0, 0})
 
-						-- Case 2: Dropping over another slot
-					elseif highlighted_slot then
-						local remainder = this.add_item(dragged.item, panel.name, row, column, false)
-						panel.slots[dragged.row][dragged.column] = remainder
-						dragged.item = nil
+			-- Case 1: Dropping over the trash
+			if dragged.panel.trash and mouse_over(dragged.panel.trash) then
+				dragged.item = nil
 
-						-- Case 3: Dropping over the trash
-					elseif mouse_over(panel.trash) then
-						dragged.item = nil
+				-- Case 2: Dropping over another slot with a different item
+			elseif highlighted_slot and dest_panel.slots[row][column].name ~= dragged.item.name then
+				dragged.panel.slots[dragged.row][dragged.column] = dest_panel.slots[row][column]
+				dest_panel.slots[row][column] = dragged.item
+				dragged.item = nil
 
-						-- Case 4: Dropping anywhere else
-					else
-						panel.slots[dragged.row][dragged.column] = dragged.item
-						dragged.item = nil
-					end
-				end
+				-- Case 3: Dropping over another slot
+			elseif highlighted_slot then
+				local remainder = this.add_item(dragged.item, dest_panel.name, row, column, false)
+				dragged.panel.slots[dragged.row][dragged.column] = remainder
+				dragged.item = nil
+
+				-- Case 4: Dropping anywhere else
+			else
+				dragged.panel.slots[dragged.row][dragged.column] = dragged.item
+				dragged.item = nil
 			end
 		end
 	end
@@ -198,9 +232,11 @@ return function()
 
 				-- Highlighted slot
 				if highlighted_slot then
-					local _, row, column = unpack(highlighted_slot)
-					local s = slot_info(panel, row, column)
-					love.graphics.draw(panel.highlight_sprite, s.x, s.y)
+					local highlighted_panel, row, column = unpack(highlighted_slot)
+					if highlighted_panel.name == panel.name then
+						local s = slot_info(panel, row, column)
+						love.graphics.draw(panel.highlight_sprite, s.x, s.y)
+					end
 				end
 
 				-- Drag and drop
