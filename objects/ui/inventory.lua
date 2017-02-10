@@ -105,6 +105,7 @@ return function()
 
 		-- Trash
 		if _trash_sprite then
+			trash.hidden = true
 			trash.sprite = _trash_sprite
 			trash.width, trash.height = _trash_sprite:getDimensions()
 		end
@@ -211,7 +212,7 @@ return function()
 
 	this.draw = function()
 		-- Trash
-		if trash then
+		if trash and not trash.hidden then
 			love.graphics.draw(trash.sprite, trash.x, trash.y)
 		end
 
@@ -256,7 +257,11 @@ return function()
 	-- Visibility
 
 	this.toggle = function(panel_name)
-		panels[panel_name].hidden = not panels[panel_name].hidden
+		if panel_name == 'trash' then
+			trash.hidden = not trash.hidden
+		else
+			panels[panel_name].hidden = not panels[panel_name].hidden
+		end
 	end
 
 	-- Add item
