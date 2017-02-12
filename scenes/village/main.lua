@@ -53,6 +53,9 @@ this.initialise = function(_managers)
 			panel.x = (love.graphics.getWidth() - panel.width) / 2
 			panel.y = (love.graphics.getHeight() - panel.height) / 2
 		end,
+		onclick = function(clicked)
+			-- print(clicked.item.name)
+		end,
 	})
 
 	inventory.add_panel({
