@@ -24,7 +24,7 @@ return function()
 
 	-- Trash
 
-	local trash = {}
+	local trash
 
 	-- Drag and drop
 
@@ -90,6 +90,7 @@ return function()
 
 		-- Trash
 		if _trash_sprite then
+			trash = {}
 			trash.hidden = true
 			trash.sprite = _trash_sprite
 			trash.width, trash.height = _trash_sprite:getDimensions()
@@ -157,7 +158,7 @@ return function()
 			if dragged.item then
 
 				-- Case 1: Dropping over the trash
-				if trash and mouse_over(trash) then
+				if trash and not trash.hidden and mouse_over(trash) then
 					dragged.item = nil
 
 				-- Case 2: Dropping outside a panel
