@@ -44,6 +44,19 @@ this.initialise = function(_managers)
 	-- Inventory
 
 	inventory.add_panel({
+		name = 'main',
+		sprite = managers.graphics.graphics.ui.inventory.inventory_20,
+		highlight_sprite = managers.graphics.graphics.ui.inventory.inventory_slot_highlight,
+		hidden = true,
+		rows = 2,
+		columns = 10,
+		position = function(panel)
+			panel.x = (love.graphics.getWidth() - panel.width) / 2
+			panel.y = (love.graphics.getHeight() - panel.height) / 2
+		end,
+	})
+
+	inventory.add_panel({
 		name = 'action_bar',
 		sprite = managers.graphics.graphics.ui.inventory.action_bar_10,
 		highlight_sprite = managers.graphics.graphics.ui.inventory.inventory_slot_highlight,

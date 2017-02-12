@@ -9,8 +9,6 @@ return function()
 	-- Constants
 
 	local EMPTY = 'empty'
-	local ROWS = 2
-	local COLUMNS = 10
 
 	-- Mouse
 
@@ -85,35 +83,12 @@ return function()
 
 	-- Initialise
 
-	this.initialise = function(_sprite, _slot_highlight_sprite, _trash_sprite, _slot_width, _slot_height, _main_margin_x, _main_margin_y, _slot_margin_x, _slot_margin_y, _text_color)
-		panels.main = {}
-		panels.main.name = 'main'
-		panels.main.sprite = _sprite
-		panels.main.highlight_sprite = _slot_highlight_sprite
-		panels.main.slot_width = _slot_width or 50
-		panels.main.slot_height = _slot_height or 50
-		panels.main.padding_x = _main_margin_x or 20
-		panels.main.padding_y = _main_margin_y or 10
-		panels.main.margin_x = _slot_margin_x or 10
-		panels.main.margin_y = _slot_margin_y or 10
-		panels.main.text_color = _text_color or {0,0,0,255}
-		panels.main.width, panels.main.height = panels.main.sprite:getDimensions()
-		panels.main.hidden = true
-
-		-- Slots
-		panels.main.slots = array2d.new(ROWS, COLUMNS, EMPTY)
-
+	this.initialise = function(_trash_sprite)
 		-- Trash
 		if _trash_sprite then
 			trash.hidden = true
 			trash.sprite = _trash_sprite
 			trash.width, trash.height = _trash_sprite:getDimensions()
-		end
-
-		-- Position
-		function panels.main.position(panel)
-			panel.x = (love.graphics.getWidth() - panel.width) / 2
-			panel.y = (love.graphics.getHeight() - panel.height) / 2
 		end
 	end
 
