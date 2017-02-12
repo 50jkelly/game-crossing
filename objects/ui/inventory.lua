@@ -160,22 +160,40 @@ return function()
 			if dragged.item then
 
 				-- Case 1: Dropping over the trash
-				if trash and not trash.hidden and mouse_over(trash) then
+				local dropping_over_trash =
+					trash and
+					(not trash.hidden) and
+					mouse_over(trash)
+
+				local dropping_outside_panel =
+					(not clicked.panel) or
+					(not clicked.panel.drag_and_drop_enabled)
+
+				local dropping_over_different_item =
+					clicked.panel and
+					clicked.panel.drag_and_drop_enabled and
+					clicked.panel.slots[clicked.row][clicked.column].name ~= dragged.item.name
+
+				local dropping_over_same_item =
+					clicked.panel and
+					clicked.panel.drag_and_drop_enabled
+
+				if dropping_over_trash then
 					dragged.item = nil
 
 				-- Case 2: Dropping outside a panel
-				elseif (not clicked.panel) or (not clicked.panel.drag_and_drop_enabled) then
+				elseif dropping_outside_panel then
 					dragged.panel.slots[dragged.row][dragged.column] = dragged.item
 					dragged.item = nil
 
 				-- Case 3: Dropping over another slot with a different item
-				elseif clicked.panel.drag_and_drop_enabled and highlighted_slot and clicked.panel.slots[clicked.row][clicked.column].name ~= dragged.item.name then
+				elseif dropping_over_different_item then
 					dragged.panel.slots[dragged.row][dragged.column] = clicked.panel.slots[clicked.row][clicked.column]
 					clicked.panel.slots[clicked.row][clicked.column] = dragged.item
 					dragged.item = nil
 
 				-- Case 4: Dropping over another slot
-				elseif clicked.panel.drag_and_drop_enabled and highlighted_slot then
+				elseif dropping_over_same_item then
 					local remainder = this.add_item(dragged.item, clicked.panel.name, clicked.row, clicked.column, false)
 					dragged.panel.slots[dragged.row][dragged.column] = remainder
 					dragged.item = nil
