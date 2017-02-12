@@ -266,11 +266,12 @@ return function()
 
 	-- Visibility
 
-	this.toggle = function(panel_name)
+	this.toggle = function(panel_name, property)
 		if panel_name == 'trash' then
 			trash.hidden = not trash.hidden
 		else
-			panels[panel_name].hidden = not panels[panel_name].hidden
+			property = property or 'hidden'
+			panels[panel_name][property] = not panels[panel_name][property]
 		end
 	end
 

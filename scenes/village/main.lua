@@ -71,6 +71,7 @@ this.initialise = function(_managers)
 		if key == 'inventory' then
 			inventory.toggle('main')
 			inventory.toggle('trash')
+			inventory.toggle('action_bar', 'drag_and_drop_enabled')
 		end
 	end)
 
