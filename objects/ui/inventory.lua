@@ -8,7 +8,7 @@ return function()
 
 	-- Constants
 
-	local EMPTY = 'empty'
+	this.EMPTY = 'empty'
 
 	-- Mouse
 
@@ -83,7 +83,7 @@ return function()
 
 		local rows = args.rows or defaults.rows
 		local columns = args.columns or defaults.columns
-		panels[args.name].slots = array2d.new(rows, columns, EMPTY)
+		panels[args.name].slots = array2d.new(rows, columns, this.EMPTY)
 	end
 
 	-- Initialise
@@ -201,7 +201,7 @@ return function()
 
 			-- Drag
 			elseif clicked.panel and clicked.panel.drag_and_drop_enabled then
-				if clicked.item ~= EMPTY then
+				if clicked.item ~= this.EMPTY then
 					dragged = clicked
 
 					-- Get grabbed position
@@ -210,7 +210,7 @@ return function()
 					dragged.sprite_y = love.mouse.getY() - s.y
 
 					-- Empty slot
-					dragged.panel.slots[dragged.row][dragged.column] = EMPTY
+					dragged.panel.slots[dragged.row][dragged.column] = this.EMPTY
 				else
 					dragged.item = nil
 				end
@@ -233,7 +233,7 @@ return function()
 
 				-- Slots
 				for row, column, slot in array2d.iter(panel.slots, true) do
-					if slot ~= EMPTY then
+					if slot ~= this.EMPTY then
 						local s = slot_info(panel, row, column)
 						love.graphics.draw(slot.sprite, s.x, s.y)
 						love.graphics.setColor(panel.text_color)
@@ -249,6 +249,13 @@ return function()
 						local s = slot_info(panel, row, column)
 						love.graphics.draw(panel.highlight_sprite, s.x, s.y)
 					end
+				end
+
+				-- Selected slot
+				if panel.selected_slot then
+					local row, column = unpack(panel.selected_slot)
+					local info = slot_info(panel, row, column)
+					love.graphics.draw(panel.selected_sprite, info.x, info.y)
 				end
 
 				-- Drag and drop
@@ -302,7 +309,7 @@ return function()
 				return items[1] -- Return leftover items
 			
 			-- Case 1: Slot is empty
-			elseif panel.slots[row][column] == EMPTY then
+			elseif panel.slots[row][column] == this.EMPTY then
 				panel.slots[row][column] = items[1]
 				return add_item(tablex.sub(items, 2), row, column)
 

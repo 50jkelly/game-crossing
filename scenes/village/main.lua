@@ -59,11 +59,17 @@ this.initialise = function(_managers)
 		name = 'action_bar',
 		sprite = managers.graphics.graphics.ui.inventory.action_bar_10,
 		highlight_sprite = managers.graphics.graphics.ui.inventory.inventory_slot_highlight,
+		selected_sprite = managers.graphics.graphics.ui.inventory.inventory_slot_select,
 		hidden = false,
 		drag_and_drop_enabled = false,
 		position = function(panel)
 			panel.x = (love.graphics.getWidth() - panel.width) / 2
 			panel.y = love.graphics.getHeight() - panel.height - 20
+		end,
+		onclick = function(clicked)
+			if clicked and not clicked.panel.drag_and_drop_enabled then
+				clicked.panel.selected_slot = { clicked.row, clicked.column }
+			end
 		end,
 	})
 
