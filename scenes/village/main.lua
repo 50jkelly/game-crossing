@@ -53,9 +53,6 @@ this.initialise = function(_managers)
 			panel.x = (love.graphics.getWidth() - panel.width) / 2
 			panel.y = (love.graphics.getHeight() - panel.height) / 2
 		end,
-		onclick = function(clicked)
-			-- print(clicked.item.name)
-		end,
 	})
 
 	inventory.add_panel({
@@ -63,10 +60,11 @@ this.initialise = function(_managers)
 		sprite = managers.graphics.graphics.ui.inventory.action_bar_10,
 		highlight_sprite = managers.graphics.graphics.ui.inventory.inventory_slot_highlight,
 		hidden = false,
+		drag_and_drop_enabled = false,
 		position = function(panel)
 			panel.x = (love.graphics.getWidth() - panel.width) / 2
 			panel.y = love.graphics.getHeight() - panel.height - 20
-		end
+		end,
 	})
 
 	signal.register('keypressed', function(key)

@@ -74,7 +74,9 @@ return function()
 		end
 
 		for index, _ in pairs(defaults) do
-			panels[args.name][index] = panels[args.name][index] or defaults[index]
+			if panels[args.name][index] == nil then
+				panels[args.name][index] = defaults[index]
+			end
 		end
 
 		panels[args.name].width, panels[args.name].height = panels[args.name].sprite:getDimensions()
@@ -162,25 +164,25 @@ return function()
 					dragged.item = nil
 
 				-- Case 2: Dropping outside a panel
-				elseif not clicked.panel then
+				elseif (not clicked.panel) or (not clicked.panel.drag_and_drop_enabled) then
 					dragged.panel.slots[dragged.row][dragged.column] = dragged.item
 					dragged.item = nil
 
 				-- Case 3: Dropping over another slot with a different item
-				elseif highlighted_slot and clicked.panel.slots[clicked.row][clicked.column].name ~= dragged.item.name then
+				elseif clicked.panel.drag_and_drop_enabled and highlighted_slot and clicked.panel.slots[clicked.row][clicked.column].name ~= dragged.item.name then
 					dragged.panel.slots[dragged.row][dragged.column] = clicked.panel.slots[clicked.row][clicked.column]
 					clicked.panel.slots[clicked.row][clicked.column] = dragged.item
 					dragged.item = nil
 
 				-- Case 4: Dropping over another slot
-				elseif highlighted_slot then
+				elseif clicked.panel.drag_and_drop_enabled and highlighted_slot then
 					local remainder = this.add_item(dragged.item, clicked.panel.name, clicked.row, clicked.column, false)
 					dragged.panel.slots[dragged.row][dragged.column] = remainder
 					dragged.item = nil
 				end
 
 			-- Drag
-			elseif clicked.panel then
+			elseif clicked.panel and clicked.panel.drag_and_drop_enabled then
 				if clicked.item ~= EMPTY then
 					dragged = clicked
 
