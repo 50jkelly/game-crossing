@@ -51,7 +51,7 @@ return function()
 			mouse.y < rect.y + rect.height
 	end
 
-	-- Add a panel
+	-- Add panel
 
 	function this.add_panel(args)
 		local defaults = {
@@ -62,6 +62,8 @@ return function()
 			margin_x = 10,
 			margin_y = 10,
 			text_color = {0,0,0,255},
+			rows = 1,
+			columns = 10,
 		}
 
 		panels[args.name] = {}
@@ -76,15 +78,14 @@ return function()
 
 		panels[args.name].width, panels[args.name].height = panels[args.name].sprite:getDimensions()
 
-		local rows = args.rows or ROWS
-		local columns = args.columns or COLUMNS
+		local rows = args.rows or defaults.rows
+		local columns = args.columns or defaults.columns
 		panels[args.name].slots = array2d.new(rows, columns, EMPTY)
 	end
 
 	-- Initialise
 
 	this.initialise = function(_trash_sprite)
-		-- Trash
 		if _trash_sprite then
 			trash.hidden = true
 			trash.sprite = _trash_sprite
