@@ -146,11 +146,11 @@ return function()
 			if highlighted_slot then
 				clicked.panel, clicked.row, clicked.column = unpack(highlighted_slot)
 				clicked.item = clicked.panel.slots[clicked.row][clicked.column]
-			end
 			
-			-- Fire clicked callback
-			if clicked.panel.onclick then
-				clicked.panel.onclick(clicked)
+				-- Clicked callback
+				if clicked.panel.onclick then
+					clicked.panel.onclick(clicked)
+				end
 			end
 
 			-- Drop
