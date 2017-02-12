@@ -308,19 +308,17 @@ return function()
 
 			-- Case 2: Slot does not contain a matching item
 			elseif panel.slots[row][column].name ~= items[1].name then
+				row, column = nil, nil
 				if try_other_slots then 
 					row, column = next()
-				else
-					row, column = nil, nil
 				end
 				return add_item(items, row, column)
 
 			-- Case 3: Slot is full
 			elseif panel.slots[row][column].amount == panel.slots[row][column].stack_size then
+				row, column = nil, nil
 				if try_other_slots then 
 					row, column = next()
-				else
-					row, column = nil, nil
 				end
 				return add_item(items, row, column)
 
