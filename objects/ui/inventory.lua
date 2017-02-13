@@ -420,16 +420,5 @@ return function()
 
 	end
 
-	-- Find item
-
-	this.find = function(name, panel)
-		for row, column, slot in array2d.iter(panel.slots, true) do
-			if slot.name == name then
-				return { row, column, slot }
-			end
-		end
-		return nil
-	end
-
 	return this
 end

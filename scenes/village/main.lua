@@ -97,6 +97,13 @@ this.initialise = function(_managers)
 		name = 'Books',
 		sprite = managers.graphics.graphics.items.book,
 		amount = 1,
+		stack_size = 1,
+	}, 'action_bar')
+	inventory.add_item({
+		name = 'Books',
+		sprite = managers.graphics.graphics.items.book,
+		amount = 1,
+		stack_size = 1,
 	}, 'action_bar')
 
 end
