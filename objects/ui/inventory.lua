@@ -180,15 +180,14 @@ return function()
 				end
 
 				local function swap_items()
-					dragged.panel.slots[dragged.row][dragged.column] = clicked.panel.slots[clicked.row][clicked.column]
-					clicked.panel.slots[clicked.row][clicked.column] = dragged.item
-					dragged.item = nil
+					local temp_item = dragged.item
+					dragged.item = clicked.panel.slots[clicked.row][clicked.column]
+					clicked.panel.slots[clicked.row][clicked.column] = temp_item
+					if dragged.item == this.EMPTY then dragged.item = nil end
 				end
 
 				local function add_dragged_item()
-					local remainder = this.add_item(dragged.item, clicked.panel.name, clicked.row, clicked.column, false)
-					dragged.panel.slots[dragged.row][dragged.column] = remainder
-					dragged.item = nil
+					dragged.item = this.add_item(dragged.item, clicked.panel.name, clicked.row, clicked.column, false)
 				end
 
 				if dropping_over_trash              then remove_dragged_item()
