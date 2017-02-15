@@ -85,14 +85,14 @@ this.initialise = function(_managers)
 		name = 'Seeds',
 		sprite = managers.graphics.graphics.items.seed,
 		amount = 3,
-		stack_size = 4
+		stack_size = 10
 	}, 'main', 2, 1)
 	inventory.add_item({
 		name = 'Seeds',
 		sprite = managers.graphics.graphics.items.seed,
-		amount = 2,
-		stack_size = 4
-	}, 'main', 2, 2)
+		amount = 7,
+		stack_size = 10
+	}, 'main', 2, 1)
 	inventory.add_item({
 		name = 'Books',
 		sprite = managers.graphics.graphics.items.book,

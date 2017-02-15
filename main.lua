@@ -50,7 +50,7 @@ function love.load()
 	managers.objects.initialise(managers)
 	managers.items.initialise(managers)
 
-	inventory.initialise(managers.graphics.graphics.ui.inventory.trash)
+	inventory.initialise(signal, managers.graphics.graphics.ui.inventory.trash)
 
 	managers.scenes.initialise(managers)
 end

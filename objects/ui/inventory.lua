@@ -10,9 +10,10 @@ return function()
 
 	this.EMPTY = 'empty'
 
-	-- Mouse
+	-- Input
 
 	local mouse = {}
+	local keyboard = {}
 
 	-- Panels
 
@@ -80,7 +81,7 @@ return function()
 
 	-- Initialise
 
-	this.initialise = function(_trash_sprite)
+	this.initialise = function(signal, _trash_sprite)
 
 		-- Trash
 		if _trash_sprite then
@@ -89,59 +90,24 @@ return function()
 			trash.sprite = _trash_sprite
 			trash.width, trash.height = _trash_sprite:getDimensions()
 		end
-	end
 
-	-- Update
+		-- Register events
+		signal.register('mousereleased', function(button, x, y)
 
-	this.update = function()
+			mouse.left = button == 'left'
+			mouse.right = button == 'right'
+			keyboard.shift = love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')
 
-		-- Reset
-		highlighted_slot = nil
 
-		-- Mouse position
-		mouse.x = love.mouse.getX()
-		mouse.y = love.mouse.getY()
-		mouse.left = love.mouse.isDown(1)
-		mouse.right = love.mouse.isDown(2)
-
-		for _, panel in pairs(panels) do
-			if not panel.hidden then
-
-				-- Panel position
-				panel.position(panel)
-
-				-- Mouse hover
-				for row, column, slot in array2d.iter(panel.slots, true) do
-					if mouse_over(slot_info(panel, row, column)) then
-						highlighted_slot = { panel, row, column }
-					end
-				end
-			end
-		end
-
-		-- Trash position
-		if trash then
-			if panels.main.x and panels.main.y then
-				trash.x = panels.main.x + panels.main.width - trash.width
-				trash.y = panels.main.y + panels.main.height + panels.main.padding_y
-			end
-		end
-
-		-- Get clicked item
-		if mouse.left then
-			mouse.clicking = true
-		end
-
-		if not mouse.left and mouse.clicking then
-			mouse.clicking = false
-
-			-- Get item details
+			-- Get clicked item
 			local clicked = {}
 
 			if highlighted_slot then
 				clicked.panel, clicked.row, clicked.column = unpack(highlighted_slot)
-				clicked.item = clicked.panel.slots[clicked.row][clicked.column]
-			
+				if clicked.panel.slots[clicked.row][clicked.column] ~= this.EMPTY then
+					clicked.item = tablex.copy(clicked.panel.slots[clicked.row][clicked.column])
+				end
+
 				-- Clicked callback
 				if clicked.panel.onclick then
 					clicked.panel.onclick(clicked)
@@ -175,8 +141,7 @@ return function()
 				end
 
 				local function reset_dragged_item()
-					dragged.panel.slots[dragged.row][dragged.column] = dragged.item
-					dragged.item = nil
+					dragged.item = this.add_item(dragged.item, dragged.panel.name, dragged.row, dragged.column)
 				end
 
 				local function swap_items()
@@ -202,6 +167,8 @@ return function()
 
 				local function set_dragged_item()
 					dragged = clicked
+					if mouse.right                       then dragged.item.amount = 1
+					elseif mouse.left and keyboard.shift then dragged.item.amount = math.ceil(dragged.item.amount / 2) end
 				end
 
 				local function clear_dragged_item()
@@ -215,7 +182,10 @@ return function()
 				end
 
 				local function empty_dragged_slot()
-					dragged.panel.slots[dragged.row][dragged.column] = this.EMPTY
+					if mouse.left and keyboard.shift then dragged.panel.slots[dragged.row][dragged.column].amount = math.floor(dragged.panel.slots[dragged.row][dragged.column].amount / 2)
+					elseif mouse.left                then dragged.panel.slots[dragged.row][dragged.column] = this.EMPTY
+					elseif mouse.right               then dragged.panel.slots[dragged.row][dragged.column].amount = dragged.panel.slots[dragged.row][dragged.column].amount - 1 end
+					if dragged.panel.slots[dragged.row][dragged.column].amount == 0 then dragged.panel.slots[dragged.row][dragged.column] = this.EMPTY end
 				end
 
 				if can_drag then
@@ -225,6 +195,41 @@ return function()
 				else
 					clear_dragged_item()
 				end
+			end
+		end)
+	end
+
+	-- Update
+
+	this.update = function()
+
+		-- Reset
+		highlighted_slot = nil
+
+		-- Mouse position
+		mouse.x = love.mouse.getX()
+		mouse.y = love.mouse.getY()
+
+		for _, panel in pairs(panels) do
+			if not panel.hidden then
+
+				-- Panel position
+				panel.position(panel)
+
+				-- Mouse hover
+				for row, column, slot in array2d.iter(panel.slots, true) do
+					if mouse_over(slot_info(panel, row, column)) then
+						highlighted_slot = { panel, row, column }
+					end
+				end
+			end
+		end
+
+		-- Trash position
+		if trash then
+			if panels.main.x and panels.main.y then
+				trash.x = panels.main.x + panels.main.width - trash.width
+				trash.y = panels.main.y + panels.main.height + panels.main.padding_y
 			end
 		end
 	end
