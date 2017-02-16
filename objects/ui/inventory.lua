@@ -115,7 +115,7 @@ return function()
 			end
 
 			-- Drop
-			if dragged.item then
+			if mouse.left and dragged.item then
 
 				local dropping_over_trash =
 					trash and
@@ -166,9 +166,18 @@ return function()
 				local can_drag = clicked.item ~= this.EMPTY
 
 				local function set_dragged_item()
-					dragged = clicked
-					if mouse.right                       then dragged.item.amount = 1
-					elseif mouse.left and keyboard.shift then dragged.item.amount = math.ceil(dragged.item.amount / 2) end
+					local amount
+					if dragged.item then
+						amount = dragged.item.amount
+					elseif not dragged.item then 
+						dragged = clicked
+						amount = 0
+					end
+
+					if mouse.left and keyboard.shift then amount = math.ceil(clicked.item.amount / 2)
+					elseif mouse.left                then amount = clicked.item.amount
+					elseif mouse.right               then amount = amount + 1 end
+					dragged.item.amount = amount
 				end
 
 				local function clear_dragged_item()
