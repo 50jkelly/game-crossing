@@ -163,7 +163,7 @@ return function()
 			-- Drag
 			elseif clicked.panel and clicked.panel.drag_and_drop_enabled then
 
-				local can_drag = clicked.item ~= this.EMPTY
+				local can_drag = clicked.item and clicked.item ~= this.EMPTY
 
 				local function set_dragged_item()
 					local amount
@@ -174,9 +174,9 @@ return function()
 						amount = 0
 					end
 
-					if mouse.left and keyboard.shift then amount = math.ceil(clicked.item.amount / 2)
-					elseif mouse.left                then amount = clicked.item.amount
-					elseif mouse.right               then amount = amount + 1 end
+					if can_drag and mouse.left and keyboard.shift then amount = math.ceil(clicked.item.amount / 2)
+					elseif can_drag and mouse.left                then amount = clicked.item.amount
+					elseif can_drag and mouse.right               then amount = amount + 1 end
 					dragged.item.amount = amount
 				end
 
